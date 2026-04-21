@@ -1,0 +1,24 @@
+# Rust build artifacts
+bigame-mode/target/
+
+# Compiled locale files
+*.mo
+
+# Editor / IDE
+*.swp
+*~
+*.bak
+*.orig
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI assistant metadata
+.serena/
+
+# Temporary
+/tmp/
