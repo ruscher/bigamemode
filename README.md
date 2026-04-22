@@ -50,7 +50,7 @@ Certifique-se de ter os repositórios do BigLinux ativos para as dependências `
 
 ```bash
 # Clonar o repositório da interface
-git clone https://github.com/biglinux/bigamemode.git
+git clone https://github.com/ruscher/bigamemode.git
 cd bigamemode/pkgbuild
 makepkg -si
 ```

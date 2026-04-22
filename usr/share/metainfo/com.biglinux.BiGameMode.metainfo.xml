@@ -27,8 +27,8 @@
 
   <launchable type="desktop-id">com.biglinux.BiGameMode.desktop</launchable>
 
-  <url type="homepage">https://github.com/biglinux/bigame-mode</url>
-  <url type="bugtracker">https://github.com/biglinux/bigame-mode/issues</url>
+  <url type="homepage">https://github.com/ruscher/bigame-mode</url>
+  <url type="bugtracker">https://github.com/ruscher/bigame-mode/issues</url>
 
   <developer id="com.biglinux">
     <name>BigLinux Team</name>
