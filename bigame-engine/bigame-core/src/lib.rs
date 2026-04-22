@@ -28,3 +28,4 @@ pub(crate) mod tests {
         dir
     }
 }
+pub mod dbus_client;

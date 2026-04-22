@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bigame-core", "bigame-ui"]
+members = ["bigame-core", "bigame-daemon", "bigame-ui"]
 
 [workspace.package]
 version = "1.0.0"

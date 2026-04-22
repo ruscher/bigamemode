@@ -71,6 +71,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bigame-daemon"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "bigame-core",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "zbus",
+]
+
+[[package]]
 name = "bigame-ui"
 version = "1.0.0"
 dependencies = [
