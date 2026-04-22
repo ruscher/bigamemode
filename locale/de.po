@@ -1,0 +1,932 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bigame-mode\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-22 00:59-0300\n"
+"PO-Revision-Date: 2026-04-20 22:16\n"
+"Last-Translator: Translation Automator <auto@translator.ai>\n"
+"Language-Team: German <de@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:617
+msgid "input string"
+msgstr "Eingabestring"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:623
+msgid "hi"
+msgstr "Hallo"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:629
+msgid "another check"
+msgstr "weitere Überprüfung"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:635
+msgid "hello"
+msgstr "Hallo"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:641
+msgid "yet  another one"
+msgstr "noch ein weiterer"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:737
+msgctxt "context"
+msgid "string"
+msgstr "Zeichenkette"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:743
+msgctxt "ctx"
+msgid "a messageto be translated"
+msgstr "eine Nachricht, die übersetzt werden soll"
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:567
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:579
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:583
+msgid "Hello, world!"
+msgid_plural "Hello, worlds!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:594
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:606
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:610
+msgctxt "context"
+msgid "Hello, world!"
+msgid_plural "Hello, worlds!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:647
+msgid "singularform"
+msgid_plural "plural form"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:653
+msgid "singular form"
+msgid_plural "pluralform"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:659
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:695
+msgid "one"
+msgid_plural "many"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:665
+msgid "just a single one"
+msgid_plural "many"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:671
+msgid "1"
+msgid_plural "manymanymany more"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:679
+msgid "singular"
+msgid_plural "plural"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:689
+msgid "ne"
+msgid_plural "plural"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:749
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:755
+msgctxt "ctx"
+msgid "singular"
+msgid_plural "plural"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/src/lib.rs:761
+msgctxt "context"
+msgid "uno"
+msgid_plural "one fewer"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:64
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:76
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:89
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:116
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:120
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:135
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:139
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:156
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:166
+msgid "Hello, World!"
+msgid_plural "Hello, Worlds!"
+msgstr[0] ""
+msgstr[1] ""
+
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:103
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:185
+#: /home/ruscher/Documentos/Git/bigamemode/bigame-mode/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/gettext-rs-0.7.7/tests/integration.rs:189
+msgctxt "context"
+msgid "Hello, World!"
+msgid_plural "Hello, Worlds!"
+msgstr[0] ""
+msgstr[1] ""
+
+#~ msgid "Performance"
+#~ msgstr "Leistung"
+
+#~ msgid "Power Profile"
+#~ msgstr "Energieprofil"
+
+#~ msgid "Checking…"
+#~ msgstr "Überprüfung…"
+
+#~ msgid "Frame Generation (lsfg-vk)"
+#~ msgstr ""
+
+#~ msgid "Vulkan implicit layer · No Steam launch options needed"
+#~ msgstr ""
+
+#~ msgid "Ready"
+#~ msgstr ""
+
+#~ msgid "Not installed"
+#~ msgstr ""
+
+#~ msgid "Falcond Daemon"
+#~ msgstr "Falcond Daemon"
+
+#~ msgid "Active Profile"
+#~ msgstr "Aktives Profil"
+
+#~ msgid "Stopped"
+#~ msgstr "Gestoppt"
+
+#~ msgid "SCX Scheduler"
+#~ msgstr "SCX Scheduler"
+
+#~ msgid "VCache Mode"
+#~ msgstr "VCache-Modus"
+
+#~ msgid "System Telemetry"
+#~ msgstr "System-Telemetrie"
+
+#~ msgid "CPU Frequency"
+#~ msgstr "CPU-Frequenz"
+
+#~ msgid "GPU Frequency"
+#~ msgstr "GPU-Frequenz"
+
+#~ msgid "GPU Temperature"
+#~ msgstr "GPU-Temperatur"
+
+#~ msgid "Disk I/O"
+#~ msgstr "Festplatten-I/O"
+
+#~ msgid "Network Latency"
+#~ msgstr "Netzwerk-Latenz"
+
+#~ msgid "RAM Usage"
+#~ msgstr "RAM-Auslastung"
+
+#~ msgid "Detected Games"
+#~ msgstr "Erkannte Spiele"
+
+#~ msgid "No games detected"
+#~ msgstr "Keine Spiele erkannt"
+
+#~ msgid "Install games via Steam, Lutris, or Heroic"
+#~ msgstr "Spiele über Steam, Lutris oder Heroic installieren"
+
+#~ msgid "Profile exists"
+#~ msgstr "Profil vorhanden"
+
+#~ msgid "Create Profile"
+#~ msgstr "Profil erstellen"
+
+#~ msgid "Profile created"
+#~ msgstr "Profil erstellt"
+
+#~ msgid "Launch with Gamescope"
+#~ msgstr "Mit Gamescope starten"
+
+#~ msgid "Launching with Gamescope…"
+#~ msgstr "Starte mit Gamescope…"
+
+#~ msgid "Running"
+#~ msgstr "Läuft"
+
+#~ msgid "Daemon not running"
+#~ msgstr "Daemon läuft nicht"
+
+#~ msgid "Game Launched"
+#~ msgstr "Spiel gestartet"
+
+#, c-format
+#~ msgid "Falcond profile active: %s"
+#~ msgstr ""
+
+#~ msgid "Game Exited"
+#~ msgstr "Spiel beendet"
+
+#~ msgid "Falcond returned to idle"
+#~ msgstr ""
+
+#~ msgid "Unavailable"
+#~ msgstr "Nicht verfügbar"
+
+#~ msgid "CPU"
+#~ msgstr ""
+
+#~ msgid "GPU Temp"
+#~ msgstr ""
+
+#~ msgid "RAM"
+#~ msgstr ""
+
+#~ msgid "Display"
+#~ msgstr "Anzeige"
+
+#~ msgid "Width"
+#~ msgstr "Breite"
+
+#~ msgid "Output resolution width"
+#~ msgstr "Ausgabebreite der Auflösung"
+
+#~ msgid "Height"
+#~ msgstr "Höhe"
+
+#~ msgid "Output resolution height"
+#~ msgstr "Ausgabeauflösung Höhe"
+
+#~ msgid "Framerate Limit"
+#~ msgstr "Bildratenbegrenzung"
+
+#~ msgid "0 = unlimited"
+#~ msgstr "0 = unbegrenzt"
+
+#~ msgid "Upscaling"
+#~ msgstr "Hochskalierung"
+
+#~ msgid "FSR (FidelityFX)"
+#~ msgstr "FSR (FidelityFX)"
+
+#~ msgid "AMD upscaling for lower render resolution"
+#~ msgstr "AMD-Hochskalierung für niedrigere Renderauflösung"
+
+#~ msgid "FSR Sharpness"
+#~ msgstr "FSR Schärfe"
+
+#~ msgid "0 = sharpest, 20 = softest"
+#~ msgstr "0 = schärfst, 20 = weichst"
+
+#~ msgid "Overlay"
+#~ msgstr "Overlay"
+
+#~ msgid "MangoHud"
+#~ msgstr "MangoHud"
+
+#~ msgid "Performance overlay (MangoApp mode)"
+#~ msgstr "Leistungsüberlagerung (MangoApp-Modus)"
+
+#~ msgid "Launch"
+#~ msgstr "Starten"
+
+#~ msgid "Command"
+#~ msgstr "Befehl"
+
+#~ msgid "Launch Gamescope"
+#~ msgstr "Gamescope starten"
+
+#~ msgid "Launching…"
+#~ msgstr "Starte…"
+
+#~ msgid "Gamescope launched"
+#~ msgstr "Gamescope gestartet"
+
+#~ msgid "Falcond Status"
+#~ msgstr ""
+
+#~ msgid "Live status from /tmp/falcond_status"
+#~ msgstr ""
+
+#~ msgid "Gaming Services Journal"
+#~ msgstr ""
+
+#~ msgid "Logs from falcond and related gaming services"
+#~ msgstr ""
+
+#~ msgid "Refresh"
+#~ msgstr "Aktualisieren"
+
+#~ msgid "Kernel &amp; GPU Messages"
+#~ msgstr ""
+
+#~ msgid "Recent dmesg entries related to GPU and gaming"
+#~ msgstr ""
+
+#~ msgid "Application Log"
+#~ msgstr ""
+
+#~ msgid "BiGame-mode runtime events"
+#~ msgstr ""
+
+#~ msgid "Game Profiles"
+#~ msgstr "Spielprofile"
+
+#~ msgid "New Profile"
+#~ msgstr "Neues Profil"
+
+#~ msgid "Import Profile"
+#~ msgstr "Profil importieren"
+
+#~ msgid "Profile imported"
+#~ msgstr "Profil importiert"
+
+#, c-format
+#~ msgid "Import failed: %s"
+#~ msgstr "Import fehlgeschlagen: %s"
+
+#~ msgid "Profile imported via drag-and-drop"
+#~ msgstr "Profil per Drag & Drop importiert"
+
+#~ msgid "Create with Wizard (guided)"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Perfect for beginners! Step-by-step guidance to set up the perfect profile."
+#~ msgstr ""
+
+#~ msgid "Game profile"
+#~ msgstr "Spielprofil"
+
+#~ msgid "Performance Settings"
+#~ msgstr "Leistungseinstellungen"
+
+#~ msgid "Performance Mode"
+#~ msgstr "Leistungsmodus"
+
+#~ msgid "Enable system-wide optimizations"
+#~ msgstr "Systemweite Optimierungen aktivieren"
+
+#~ msgid "Idle Inhibit"
+#~ msgstr "Leerlaufverhinderung"
+
+#~ msgid "Prevent screensaver while running"
+#~ msgstr "Bildschirmschoner während des Spielens verhindern"
+
+#~ msgid "CPU Governor"
+#~ msgstr "CPU-Governor"
+
+#~ msgid "Override CPU frequency governor"
+#~ msgstr "CPU-Frequenz-Governor überschreiben"
+
+#~ msgid "Scheduler"
+#~ msgstr "Scheduler"
+
+#~ msgid "Scheduler Mode"
+#~ msgstr "Scheduler-Modus"
+
+#~ msgid "Custom Scheduler Flags"
+#~ msgstr "Benutzerdefinierte Scheduler-Flags"
+
+#~ msgid "Extra CLI flags for the sched-ext scheduler (e.g. --slice-us=800)"
+#~ msgstr ""
+#~ "Zusätzliche CLI-Flags für den sched-ext Scheduler (z.B. --slice-us=800)"
+
+#~ msgid "Scripts"
+#~ msgstr "Skripte"
+
+#~ msgid "Start Script"
+#~ msgstr "Skript starten"
+
+#~ msgid "Stop Script"
+#~ msgstr "Skript stoppen"
+
+#~ msgid "Gamescope"
+#~ msgstr "Gamescope"
+
+#~ msgid "Per-game overrides (leave disabled for global defaults)"
+#~ msgstr ""
+#~ "Spiele-spezifische Überschreibungen (deaktiviert lassen für globale "
+#~ "Standardwerte)"
+
+#~ msgid "Override Gamescope"
+#~ msgstr "Gamescope überschreiben"
+
+#~ msgid "FSR"
+#~ msgstr "FSR"
+
+#~ msgid "Frame Generation (LSFG-VK)"
+#~ msgstr ""
+
+#~ msgid "Multiplier (1-4x)"
+#~ msgstr ""
+
+#~ msgid "Flow Scale (%)"
+#~ msgstr ""
+
+#~ msgid "Balanced"
+#~ msgstr ""
+
+#~ msgid "Quality"
+#~ msgstr ""
+
+#~ msgid "OTF Quality"
+#~ msgstr ""
+
+#~ msgid "Profile"
+#~ msgstr "Profil"
+
+#~ msgid "Process Name"
+#~ msgstr "Prozessname"
+
+#~ msgid "Save Profile"
+#~ msgstr "Profil speichern"
+
+#~ msgid "Saving…"
+#~ msgstr "Speichere…"
+
+#~ msgid "Profile saved"
+#~ msgstr "Profil gespeichert"
+
+#~ msgid "Export Profile"
+#~ msgstr "Profil exportieren"
+
+#~ msgid "Profile exported"
+#~ msgstr "Profil exportiert"
+
+#, c-format
+#~ msgid "Export failed: %s"
+#~ msgstr "Export fehlgeschlagen: %s"
+
+#~ msgid "Activate Profile"
+#~ msgstr "Profil aktivieren"
+
+#~ msgid "Profile activated via GameMode"
+#~ msgstr "Profil über GameMode aktiviert"
+
+#~ msgid "Delete Profile"
+#~ msgstr "Profil löschen"
+
+#~ msgid "Delete Profile?"
+#~ msgstr "Profil löschen?"
+
+#, c-format
+#~ msgid "Remove \"%s\" permanently?"
+#~ msgstr "\"%s\" dauerhaft entfernen?"
+
+#~ msgid "Cancel"
+#~ msgstr "Abbrechen"
+
+#~ msgid "Delete"
+#~ msgstr "Löschen"
+
+#~ msgid "Profile deleted"
+#~ msgstr "Profil gelöscht"
+
+#~ msgid "No Profiles Found"
+#~ msgstr "Keine Profile gefunden"
+
+#~ msgid "Games detected by falcond will appear here"
+#~ msgstr ""
+
+#~ msgid "Appearance"
+#~ msgstr "Erscheinungsbild"
+
+#~ msgid "Dark Mode"
+#~ msgstr "Dunkler Modus"
+
+#~ msgid "Force dark color scheme"
+#~ msgstr "Dunkles Farbschema erzwingen"
+
+#~ msgid "Notifications"
+#~ msgstr "Benachrichtigungen"
+
+#~ msgid "Game Notifications"
+#~ msgstr "Spielbenachrichtigungen"
+
+#~ msgid "Show notifications on game launch and exit"
+#~ msgstr "Benachrichtigungen beim Start und Beenden des Spiels anzeigen"
+
+#~ msgid "Telemetry"
+#~ msgstr "Telemetrie"
+
+#~ msgid "Ping Target"
+#~ msgstr "Ping-Ziel"
+
+#~ msgid "About"
+#~ msgstr "Über"
+
+#~ msgid "About BiGame-mode"
+#~ msgstr "Über Bigame Mode"
+
+#~ msgid "Daemon"
+#~ msgstr "Daemon"
+
+#~ msgid "falcond global behavior"
+#~ msgstr "falcond globales Verhalten"
+
+#~ msgid "Enable performance optimizations when games are detected"
+#~ msgstr "Leistungsoptimierungen aktivieren, wenn Spiele erkannt werden"
+
+#~ msgid "Poll Interval (ms)"
+#~ msgstr "Abfrageintervall (ms)"
+
+#~ msgid "How often falcond scans /proc for new processes"
+#~ msgstr "Wie oft falcond /proc nach neuen Prozessen durchsucht"
+
+#~ msgid "Scheduler (sched-ext)"
+#~ msgstr "Scheduler (sched-ext)"
+
+#~ msgid "BPF-based process scheduler for gaming workloads"
+#~ msgstr "BPF-basierter Prozess-Scheduler für Gaming-Workloads"
+
+#~ msgid "Active sched-ext scheduler"
+#~ msgstr "Aktiver sched-ext Scheduler"
+
+#~ msgid "Mode"
+#~ msgstr "Modus"
+
+#~ msgid "Scheduler tuning preset"
+#~ msgstr "Scheduler-Tuning-Voreinstellung"
+
+#~ msgid "Frequency scaling policy (managed by PowerProfiles)"
+#~ msgstr "Frequenzskalierungsrichtlinie (verwaltet von PowerProfiles)"
+
+#~ msgid "Governor"
+#~ msgstr "Governor"
+
+#~ msgid "Applied to all CPU cores"
+#~ msgstr "Wird auf alle CPU-Kerne angewendet"
+
+#~ msgid "VCache (AMD 3D V-Cache)"
+#~ msgstr "VCache (AMD 3D V-Cache)"
+
+#~ msgid "Cache optimization strategy"
+#~ msgstr "Cache-Optimierungsstrategie"
+
+#~ msgid "Hardware not detected"
+#~ msgstr "Hardware nicht erkannt"
+
+#~ msgid "Device Mode"
+#~ msgstr "Gerätemodus"
+
+#~ msgid "Profile set matching your hardware form factor"
+#~ msgstr "Profil passend zum Formfaktor Ihrer Hardware"
+
+#~ msgid "Selects profile directory for game matching"
+#~ msgstr "Verzeichnis für Profilauswahl bei Spielzuordnung"
+
+#~ msgid "Global default settings for Gamescope launches"
+#~ msgstr "Globale Standardeinstellungen für Gamescope-Starts"
+
+#~ msgid "Micro-compositor: FSR, resolution, framerate"
+#~ msgstr "Mikro-Kompositor: FSR, Auflösung, Bildrate"
+
+#~ msgid "Reset to Defaults"
+#~ msgstr "Auf Standard zurücksetzen"
+
+#~ msgid "Booster Mode"
+#~ msgstr "Booster-Modus"
+
+#~ msgid "Activate system-wide gaming optimizations"
+#~ msgstr "Systemweite Gaming-Optimierungen aktivieren"
+
+#~ msgid "Configure real-time frame interpolation settings"
+#~ msgstr ""
+
+#~ msgid "Lossless.dll Path"
+#~ msgstr ""
+
+#~ msgid "Multiplier"
+#~ msgstr ""
+
+#~ msgid "Frames generated per real frame (1 = disabled)"
+#~ msgstr ""
+
+#~ msgid "Flow Scale"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Motion estimation resolution (25–100%). Lower = faster; higher = quality."
+#~ msgstr ""
+
+#~ msgid "Lighter model — minor quality trade-off, better FPS"
+#~ msgstr ""
+
+#~ msgid "HDR"
+#~ msgstr ""
+
+#~ msgid "Enable HDR support for frame generation"
+#~ msgstr ""
+
+#~ msgid "Present Mode"
+#~ msgstr ""
+
+#~ msgid "Frame pacing and synchronization method"
+#~ msgstr ""
+
+#~ msgid "VSync / FIFO (Default, Recommended)"
+#~ msgstr ""
+
+#~ msgid "Mailbox"
+#~ msgstr ""
+
+#~ msgid "Immediate"
+#~ msgstr ""
+
+#~ msgid "Select Lossless.dll"
+#~ msgstr ""
+
+#~ msgid "All files"
+#~ msgstr ""
+
+#~ msgid "Got It"
+#~ msgstr ""
+
+#~ msgid "Dashboard"
+#~ msgstr "Dashboard"
+
+#~ msgid "<b>Stat Bar</b> — CPU frequency, GPU temperature and RAM at a glance."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Performance Booster</b> — Enable or disable falcond for gaming "
+#~ "optimisations."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Frame Generation (lsfg-vk)</b> — Shows whether the Vulkan implicit layer "
+#~ "is installed. No Steam launch options are needed — it activates "
+#~ "automatically for configured games."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Power Profile</b> — Current system power profile (Balanced / Performance "
+#~ "/ Power Saver)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Falcond Daemon</b> — Shows the active SCX scheduler, VCache mode and "
+#~ "current game profile."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>System Telemetry</b> — Live sparkline graphs: CPU/GPU frequency, GPU "
+#~ "temperature, disk I/O, network latency and RAM usage."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Detected Games</b> — Games found via Steam, Lutris and Heroic. Create a "
+#~ "performance profile or launch directly with Gamescope."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Profile Wizard</b> — Guided setup with presets optimised for competitive "
+#~ "FPS, strategy, simulation and more."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Per-game Profiles</b> — Override global Tuning settings for a specific "
+#~ "game executable."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Auto-Apply</b> — Falcond detects the game process at launch and applies "
+#~ "the matching profile automatically."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>New Profile (+)</b> — Create a blank profile and customise every "
+#~ "parameter manually."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Import</b> — Load a .conf or .toml profile from disk. Drag-and-drop onto "
+#~ "the list also works."
+#~ msgstr ""
+
+#~ msgid "Tuning"
+#~ msgstr "Feinabstimmung"
+
+#~ msgid ""
+#~ "<b>Falcond Daemon</b> — Start or stop the daemon and toggle auto-start on "
+#~ "login."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>SCX Scheduler</b> — sched-ext BPF CPU scheduler:\n"
+#~ "  · bpfland — Low latency, ideal for competitive games\n"
+#~ "  · lavd — Load-aware, good for mixed workloads\n"
+#~ "  · rusty — General-purpose, stable default\n"
+#~ "  · flash — Maximum throughput"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>CPU Governor</b> — Performance keeps frequency at maximum; Powersave "
+#~ "scales down to save energy."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>VCache Mode</b> — AMD Ryzen X3D only. Game Mode routes workloads to the "
+#~ "VCache chiplet for lower memory latency."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Frame Generation</b> — lsfg-vk Vulkan layer: inserts interpolated frames "
+#~ "to boost perceived FPS."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Device Mode</b> — Optimise kernel tuning for Gaming or Desktop workloads."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Resolution</b> — Set the game render resolution independently from your "
+#~ "desktop resolution."
+#~ msgstr ""
+
+#~ msgid "<b>Framerate Limit</b> — Hard cap on FPS for consistent frame pacing."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>FSR</b> — FidelityFX Super Resolution upscaling. Sharpness: 0 = blurry · "
+#~ "20 = sharpest."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>MangoHud</b> — Enable the MangoHud performance overlay inside the "
+#~ "Gamescope window."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Command</b> — Game or program to launch inside Gamescope (e.g. <tt>steam "
+#~ "-gamepadui</tt>)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Launch</b> — Applies current settings and starts the Gamescope "
+#~ "compositor."
+#~ msgstr ""
+
+#~ msgid "Logs"
+#~ msgstr "Protokolle"
+
+#~ msgid ""
+#~ "<b>Falcond Status</b> — Live read of <tt>/tmp/falcond_status</tt>: current "
+#~ "scheduler, governor and active profile."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Gaming Services Journal</b> — journald entries from falcond and related "
+#~ "gaming services."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Kernel &amp; GPU Messages</b> — dmesg output filtered for GPU and gaming-"
+#~ "related entries."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Application Log</b> — BiGame-mode internal events: profile loads, D-Bus "
+#~ "calls and errors."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Auto-Refresh</b> — Logs update every 5 seconds. Click ↺ to force an "
+#~ "immediate refresh."
+#~ msgstr ""
+
+#~ msgid "Settings"
+#~ msgstr "Einstellungen"
+
+#~ msgid ""
+#~ "<b>Dark Mode</b> — Force dark colour scheme regardless of the system theme."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Game Notifications</b> — Show desktop notifications when a game launches "
+#~ "or exits."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "<b>Ping Target</b> — Hostname or IP used by the Dashboard latency sparkline "
+#~ "(default: 8.8.8.8)."
+#~ msgstr ""
+
+#~ msgid "<b>About</b> — App version, author and source code information."
+#~ msgstr ""
+
+#~ msgid "Help"
+#~ msgstr ""
+
+#~ msgid "No help available for this view."
+#~ msgstr ""
+
+#~ msgid "Ready to play"
+#~ msgstr ""
+
+#~ msgid "Gaming mode active"
+#~ msgstr ""
+
+#~ msgid "Optimization warning"
+#~ msgstr ""
+
+#~ msgid "Service error"
+#~ msgstr ""
+
+#~ msgid "Show Dashboard"
+#~ msgstr ""
+
+#~ msgid "Quit"
+#~ msgstr "Beenden"
+
+#~ msgid "Profiles"
+#~ msgstr "Profile"
+
+#~ msgid "Toggle Dark Mode"
+#~ msgstr "Dunkelmodus umschalten"
+
+#~ msgid "Keyboard Shortcuts"
+#~ msgstr "Tastenkombinationen"
+
+#~ msgid "Main Menu"
+#~ msgstr "Hauptmenü"
+
+#~ msgid "Help & Tutorial"
+#~ msgstr ""
+
+#~ msgid "General"
+#~ msgstr "Allgemein"
+
+#~ msgid "Shortcuts"
+#~ msgstr "Verknüpfungen"
+
+#~ msgid "Service Not Running or Crashed"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "BiGameMode background daemon (falcond) is not running.\n"
+#~ "This can happen if the configuration files got corrupted by an older version of the UI."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Click 'Repair & Enable' to automatically reset corrupted configurations and "
+#~ "start the service."
+#~ msgstr ""
+
+#~ msgid "Repair & Enable"
+#~ msgstr ""
+
+#~ msgid "Performance tuning for Linux gaming"
+#~ msgstr "Leistungsoptimierung für Linux-Gaming"
+
+#~ msgid "Developers"
+#~ msgstr "Entwickler"
+
+#~ msgid "Special Thanks"
+#~ msgstr ""
+
+#~ msgid "GameMode"
+#~ msgstr "GameMode"
+
+#~ msgid "GameMode activated — performance mode enabled"
+#~ msgstr "GameMode aktiviert — Leistungsmodus eingeschaltet"
+
+#~ msgid "GameMode deactivated — returning to normal"
+#~ msgstr "GameMode deaktiviert — Rückkehr zum Normalzustand"
+
+#, c-format
+#~ msgid "%s game(s) active"
+#~ msgstr "%s Spiel(e) aktiv"
+
+#~ msgid "Inactive"
+#~ msgstr "Inaktiv"
+
+#~ msgid "falcond Journal"
+#~ msgstr "falcond Journal"
+
+#~ msgid "Recent log entries from the falcond daemon"
+#~ msgstr "Aktuelle Protokolleinträge vom falcond-Daemon"
+
+#~ msgid "Game profiles will appear here when detected by falcond"
+#~ msgstr ""
+#~ "Spielprofile werden hier angezeigt, wenn sie von falcond erkannt werden"
+
+#~ msgid "Version"
+#~ msgstr "Version"
+
+#~ msgid "Gaming performance control"
+#~ msgstr "Steuerung der Gaming-Leistung"
+
+#~ msgid "Show"
+#~ msgstr "Anzeigen"

@@ -1,0 +1,202 @@
+//! System tray integration via `StatusNotifierItem` (KDE/freedesktop).
+//!
+//! Provides a tray icon when the window is hidden. Left-click activates,
+//! right-click menu offers Show/Quit.
+
+use std::sync::mpsc;
+use std::sync::{Arc, RwLock};
+use ksni::blocking::TrayMethods;
+
+use gtk4::gdk_pixbuf;
+use crate::i18n::i18n;
+
+fn load_icon_as_pixmap(name: &str) -> Option<ksni::Icon> {
+    let resource_path = format!("/com/biglinux/BiGameMode/icons/{}.svg", name);
+    let pixbuf = gdk_pixbuf::Pixbuf::from_resource_at_scale(&resource_path, 22, 22, true).ok()?;
+    
+    let width = pixbuf.width();
+    let height = pixbuf.height();
+    let pixels = pixbuf.read_pixel_bytes();
+    
+    // SNI expects ARGB (32-bit), Pixbuf is RGBA.
+    // We need to convert RGBA to ARGB.
+    let mut data = Vec::with_capacity(pixels.len());
+    let src = pixels.as_ref();
+    for i in (0..src.len()).step_by(4) {
+        let r = src[i];
+        let g = src[i+1];
+        let b = src[i+2];
+        let a = src[i+3];
+        data.push(a);
+        data.push(r);
+        data.push(g);
+        data.push(b);
+    }
+
+    Some(ksni::Icon {
+        width,
+        height,
+        data,
+    })
+}
+
+/// Status of the game mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    /// No profile active, idle (Blue).
+    Idle,
+    /// Profile active and working (Green).
+    Active,
+    /// Something is wrong (Yellow).
+    Warning,
+    /// Not working / Missing dependencies (Red). Reserved for future use.
+    #[allow(dead_code)]
+    Error,
+}
+
+impl Status {
+    fn icon_name(&self) -> String {
+        match self {
+            Status::Idle => "input-gaming-symbolic-blue".into(),
+            Status::Active => "input-gaming-symbolic-green".into(),
+            Status::Warning => "input-gaming-symbolic-yellow".into(),
+            Status::Error => "input-gaming-symbolic-red".into(),
+        }
+    }
+}
+
+/// Actions the tray can request from the GTK main loop.
+#[derive(Debug, Clone)]
+pub enum TrayAction {
+    Activate,
+    Quit,
+    SwitchProfile(String),
+}
+
+struct BiGameTray {
+    tx: mpsc::Sender<TrayAction>,
+    status: Arc<RwLock<Status>>,
+}
+
+impl ksni::Tray for BiGameTray {
+    fn id(&self) -> String {
+        String::from("bigame-mode")
+    }
+
+    fn icon_name(&self) -> String {
+        self.status.read().map(|s| s.icon_name()).unwrap_or_else(|_| Status::Idle.icon_name())
+    }
+
+    fn icon_pixmap(&self) -> Vec<ksni::Icon> {
+        let name = self.icon_name();
+        if let Some(data) = load_icon_as_pixmap(&name) {
+            vec![data]
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn title(&self) -> String {
+        String::from("BiGame-mode")
+    }
+
+    fn tool_tip(&self) -> ksni::ToolTip {
+        let s = self.status.read().map(|s| *s).unwrap_or(Status::Idle);
+        let desc = match s {
+            Status::Idle => i18n("Ready to play"),
+            Status::Active => i18n("Gaming mode active"),
+            Status::Warning => i18n("Optimization warning"),
+            Status::Error => i18n("Service error"),
+        };
+
+        let icon_pixmap = if let Some(data) = load_icon_as_pixmap(&s.icon_name()) {
+            vec![data]
+        } else {
+            Vec::new()
+        };
+
+        ksni::ToolTip {
+            title: String::from("BiGame-mode"),
+            description: desc,
+            icon_name: s.icon_name(),
+            icon_pixmap,
+        }
+    }
+
+    fn activate(&mut self, _x: i32, _y: i32) {
+        let _ = self.tx.send(TrayAction::Activate);
+    }
+
+    fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
+        let mut items = vec![
+            ksni::MenuItem::Standard(ksni::menu::StandardItem {
+                label: i18n("Show Dashboard"),
+                icon_name: "view-restore-symbolic".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.tx.send(TrayAction::Activate);
+                }),
+                ..Default::default()
+            }),
+            ksni::MenuItem::Separator,
+        ];
+
+        // Profile quick-switch items
+        let profiles = bigame_core::profiles::list_names();
+        if !profiles.is_empty() {
+            for name in profiles {
+                let label = format!("▶ {name}");
+                items.push(ksni::MenuItem::Standard(ksni::menu::StandardItem {
+                    label,
+                    activate: Box::new(move |tray: &mut Self| {
+                        let _ = tray.tx.send(TrayAction::SwitchProfile(name.clone()));
+                    }),
+                    ..Default::default()
+                }));
+            }
+            items.push(ksni::MenuItem::Separator);
+        }
+
+        items.push(ksni::MenuItem::Standard(ksni::menu::StandardItem {
+            label: i18n("Quit"),
+            icon_name: String::from("application-exit"),
+            activate: Box::new(|tray: &mut Self| {
+                let _ = tray.tx.send(TrayAction::Quit);
+            }),
+            ..Default::default()
+        }));
+
+        items
+    }
+}
+
+/// Thread-safe handle to update the tray status.
+#[derive(Clone)]
+pub struct TrayHandle {
+    status: Arc<RwLock<Status>>,
+    handle: ksni::blocking::Handle<BiGameTray>,
+}
+
+impl TrayHandle {
+    pub fn set_status(&self, status: Status) {
+        if let Ok(mut s) = self.status.write() {
+            if *s == status {
+                return;
+            }
+            *s = status;
+        }
+        self.handle.update(|_| {});
+    }
+}
+
+/// Spawn system tray in a background thread. Returns a handle to update it and a receiver for actions.
+pub fn spawn() -> (TrayHandle, mpsc::Receiver<TrayAction>) {
+    let (tx, rx) = mpsc::channel();
+    let status = Arc::new(RwLock::new(Status::Idle));
+    let tray = BiGameTray { 
+        tx, 
+        status: Arc::clone(&status) 
+    };
+    let handle = tray.spawn().expect("Failed to spawn system tray");
+    
+    (TrayHandle { status, handle }, rx)
+}

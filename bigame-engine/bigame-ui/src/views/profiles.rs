@@ -1,0 +1,929 @@
+//! Profiles view: game profile list with navigation to detail/editor.
+//!
+//! Uses `bigame_core::profiles` for CRUD operations.
+//! Saves via pkexec to user profiles directory.
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use libadwaita as adw;
+use adw::prelude::*;
+use gtk4::{gio, glib};
+
+use bigame_core::profiles::GameProfile;
+
+use crate::i18n::i18n;
+use crate::widgets::toast;
+
+/// Build the Profiles view with navigation stack.
+#[must_use]
+pub fn build() -> adw::NavigationView {
+    let nav_view = adw::NavigationView::new();
+    let list_page = build_list_page(&nav_view);
+    nav_view.add(&list_page);
+    nav_view
+}
+
+/// Build the profile list page.
+#[allow(clippy::too_many_lines)]
+fn build_list_page(nav_view: &adw::NavigationView) -> adw::NavigationPage {
+    let page = adw::PreferencesPage::new();
+
+    let group = adw::PreferencesGroup::new();
+    group.set_title(&i18n("Game Profiles"));
+
+    let list_box = gtk4::ListBox::builder()
+        .selection_mode(gtk4::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .build();
+
+    // Action buttons
+    let add_btn = gtk4::Button::builder()
+        .icon_name("list-add-symbolic")
+        .tooltip_text(i18n("New Profile"))
+        .css_classes(["circular", "flat"])
+        .build();
+    let import_btn = gtk4::Button::builder()
+        .icon_name("document-open-symbolic")
+        .tooltip_text(i18n("Import Profile"))
+        .css_classes(["circular", "flat"])
+        .build();
+    let hdr = gtk4::Box::builder().spacing(4).build();
+    hdr.append(&import_btn);
+    hdr.append(&add_btn);
+    group.set_header_suffix(Some(&hdr));
+
+    // Wizard CTA Card
+    let wizard_card = build_wizard_card(&list_box, nav_view);
+    group.add(&wizard_card);
+    group.add(&list_box);
+
+    // Initial population
+    refresh_profile_list(&list_box, nav_view);
+
+    // Refresh list whenever user navigates back from a detail/create page.
+    {
+        let lb = list_box.clone();
+        let nav_ref = nav_view.clone();
+        nav_view.connect_popped(move |_, _| {
+            refresh_profile_list(&lb, &nav_ref);
+        });
+    }
+
+    page.add(&group);
+
+    // "New Profile" → empty detail page
+    {
+        let nav = nav_view.clone();
+        add_btn.connect_clicked(move |_| {
+            nav.push(&build_detail_page_for(&GameProfile::default()));
+        });
+    }
+
+    // Import profile from file
+    {
+        let nav = nav_view.clone();
+        let lb = list_box.clone();
+        import_btn.connect_clicked(move |btn| {
+            let dialog = gtk4::FileDialog::builder()
+                .title(i18n("Import Profile"))
+                .build();
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.conf");
+            filter.add_pattern("*.toml");
+            filter.set_name(Some("Profile files (*.conf, *.toml)"));
+            let filters = gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            dialog.set_filters(Some(&filters));
+
+            let btn_ref = btn.clone();
+            let nav_ref = nav.clone();
+            let lb_ref = lb.clone();
+            let win = btn.root().and_downcast::<gtk4::Window>();
+            dialog.open(win.as_ref(), gio::Cancellable::NONE, move |result| {
+                if let Ok(file) = result {
+                    if let Some(path) = file.path() {
+                        match bigame_core::profiles::import(&path) {
+                            Ok(name) => {
+                                toast::show(&btn_ref, &i18n("Profile imported"));
+                                refresh_profile_list(&lb_ref, &nav_ref);
+                                nav_ref.push(&build_detail_page(&name));
+                            }
+                            Err(e) => {
+                                toast::show(
+                                    &btn_ref,
+                                    &i18n("Import failed: %s").replace("%s", &e.to_string()),
+                                );
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    // Drag-and-drop import
+    {
+        let nav = nav_view.clone();
+        let list_box = list_box.clone();
+        let drop_target =
+            gtk4::DropTarget::new(gio::File::static_type(), gtk4::gdk::DragAction::COPY);
+        drop_target.connect_drop(move |target, value, _x, _y| {
+            let Some(file) = value.get::<gio::File>().ok() else {
+                return false;
+            };
+            let Some(path) = file.path() else { return false };
+            match bigame_core::profiles::import(&path) {
+                Ok(name) => {
+                    crate::views::profiles::refresh_profile_list(&list_box, &nav);
+                    if let Some(widget) = target.widget() {
+                        toast::show(&widget, &i18n("Profile imported via drag-and-drop"));
+                    }
+                    nav.push(&build_detail_page(&name));
+                    true
+                }
+                Err(_) => false,
+            }
+        });
+        page.add_controller(drop_target);
+    }
+
+    adw::NavigationPage::builder()
+        .title(i18n("Game Profiles"))
+        .child(&page)
+        .build()
+}
+
+fn build_wizard_card(list_box: &gtk4::ListBox, nav: &adw::NavigationView) -> gtk4::Button {
+    let card_btn = gtk4::Button::builder()
+        .css_classes(["suggested-action-card", "flat"])
+        .margin_bottom(12)
+        .build();
+
+    let hbox = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Horizontal)
+        .spacing(16)
+        .build();
+
+    let icon = gtk4::Image::from_icon_name("system-run-symbolic");
+    icon.set_pixel_size(48);
+    icon.add_css_class("accent");
+
+    let text_vbox = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Vertical)
+        .valign(gtk4::Align::Center)
+        .spacing(2)
+        .build();
+
+    let title_label = gtk4::Label::builder()
+        .halign(gtk4::Align::Start)
+        .css_classes(["title-3"])
+        .build();
+    title_label.set_markup(&format!("<b>{}</b>", i18n("Create with Wizard (guided)")));
+
+    let desc_label = gtk4::Label::builder()
+        .halign(gtk4::Align::Start)
+        .css_classes(["dim-label", "caption"])
+        .wrap(true)
+        .build();
+    desc_label.set_markup(&i18n("Perfect for beginners! Step-by-step guidance to set up the perfect profile."));
+
+    text_vbox.append(&title_label);
+    text_vbox.append(&desc_label);
+
+    hbox.append(&icon);
+    hbox.append(&text_vbox);
+
+    card_btn.set_child(Some(&hbox));
+
+    let nav_clone = nav.clone();
+    let list_ref = list_box.clone();
+    card_btn.connect_clicked(move |btn| {
+        let nav_ref = nav_clone.clone();
+        let list_ref_inner = list_ref.clone();
+        crate::views::profile_wizard::open(btn, move |_profile| {
+            refresh_profile_list(&list_ref_inner, &nav_ref);
+        });
+    });
+
+    card_btn
+}
+
+/// Build a single activatable profile list row.
+fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::ListBox) -> adw::ActionRow {
+    let profile = bigame_core::profiles::load(name).unwrap_or_default();
+    
+    let row = adw::ActionRow::builder()
+        .title(name)
+        .subtitle(i18n("Game profile"))
+        .activatable(true)
+        .build();
+    
+    let icon = gtk4::Image::from_icon_name("applications-games-symbolic");
+    if !profile.enabled {
+        icon.add_css_class("dim-label");
+    }
+    row.add_prefix(&icon);
+    
+    // Enable/Disable toggle
+    let toggle = gtk4::Switch::builder()
+        .valign(gtk4::Align::Center)
+        .active(profile.enabled)
+        .build();
+    
+    // Connect toggle to save
+    {
+        let name_str = name.to_owned();
+        let icon_ref = icon.clone();
+        toggle.connect_state_set(move |_sw, state| {
+            let n = name_str.clone();
+            let i = icon_ref.clone();
+            let (tx, rx) = std::sync::mpsc::channel();
+            
+            std::thread::spawn(move || {
+                if let Ok(mut p) = bigame_core::profiles::load(&n) {
+                    p.enabled = state;
+                    let res = bigame_core::profiles::save(&p);
+                    tx.send(res.is_ok()).ok();
+                }
+            });
+
+            glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+                if let Ok(success) = rx.try_recv() {
+                    if success {
+                        if state {
+                            i.remove_css_class("dim-label");
+                        } else {
+                            i.add_css_class("dim-label");
+                        }
+                    }
+                    return glib::ControlFlow::Break;
+                }
+                glib::ControlFlow::Continue
+            });
+            glib::Propagation::Proceed
+        });
+    }
+    row.add_suffix(&toggle);
+
+    let is_user = bigame_core::profiles::is_user_profile(name);
+    let is_system = bigame_core::profiles::is_system_profile(name);
+
+    let (tooltip, can_delete, icon) = match (is_user, is_system) {
+        (true, true) => (i18n("Revert to System Default"), true, "edit-undo-symbolic"),
+        (true, false) => (i18n("Delete Profile"), true, "user-trash-symbolic"),
+        (false, true) => (i18n("System profiles cannot be deleted. Edit to disable them."), false, "user-trash-symbolic"),
+        (false, false) => (i18n("Unknown"), false, "user-trash-symbolic"), // Should not happen
+    };
+
+    let delete_btn = gtk4::Button::builder()
+        .icon_name(icon)
+        .css_classes(["flat", "destructive-action"])
+        .valign(gtk4::Align::Center)
+        .tooltip_text(tooltip)
+        .sensitive(can_delete)
+        .build();
+    
+    {
+        let n = name.to_owned();
+        let lb = list_box.clone();
+        let nav_ref = nav.clone();
+        delete_btn.connect_clicked(move |btn| {
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Delete Profile?"))
+                .body(i18n("Remove \"%s\" permanently?").replace("%s", &n))
+                .build();
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("delete", &i18n("Delete"));
+            dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_close_response("cancel");
+
+            let name_clone = n.clone();
+            let btn_ref = btn.clone();
+            let lb_ref = lb.clone();
+            let nav_clone = nav_ref.clone();
+            dialog.connect_response(None, move |_dlg, response| {
+                if response == "delete" {
+                    let name_del = name_clone.clone();
+                    toast::show(&btn_ref, &i18n("Profile deleted"));
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    std::thread::spawn(move || {
+                        let _ = bigame_core::profiles::delete(&name_del);
+                        tx.send(()).ok();
+                    });
+                    
+                    let lb_ref2 = lb_ref.clone();
+                    let nav_clone2 = nav_clone.clone();
+                    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+                        if rx.try_recv().is_ok() {
+                            crate::views::profiles::refresh_profile_list(&lb_ref2, &nav_clone2);
+                            return glib::ControlFlow::Break;
+                        }
+                        glib::ControlFlow::Continue
+                    });
+                }
+            });
+
+            if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
+                dialog.present(Some(&win));
+            }
+        });
+    }
+    row.add_suffix(&delete_btn);
+
+    let chevron = gtk4::Image::from_icon_name("go-next-symbolic");
+    chevron.add_css_class("dim-label");
+    row.add_suffix(&chevron);
+
+    let n = name.to_owned();
+    let nav_clone = nav.clone();
+    row.connect_activated(move |_| {
+        nav_clone.push(&build_detail_page(&n));
+    });
+    row
+}
+
+/// Build detail page loading profile from disk by name.
+fn build_detail_page(profile_name: &str) -> adw::NavigationPage {
+    let profile = bigame_core::profiles::load(profile_name).unwrap_or_else(|_| GameProfile {
+        name: profile_name.to_owned(),
+        ..GameProfile::default()
+    });
+    build_detail_page_for(&profile)
+}
+
+/// Find index of `needle` in a `StringList`.
+fn find_index(model: &gtk4::StringList, needle: &str) -> u32 {
+    for i in 0..model.n_items() {
+        if model.string(i).as_deref() == Some(needle) {
+            return i;
+        }
+    }
+    0
+}
+
+/// Build performance/scripts widgets for the detail page.
+#[allow(clippy::too_many_lines)]
+fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> PerfWidgets {
+    // Performance group
+    let perf = adw::PreferencesGroup::new();
+    perf.set_title(&i18n("Performance Settings"));
+
+    let perf_mode = adw::SwitchRow::builder()
+        .title(i18n("Performance Mode"))
+        .subtitle(i18n("Enable system-wide optimizations"))
+        .active(profile.performance_mode)
+        .build();
+    perf.add(&perf_mode);
+
+    let idle_inhibit = adw::SwitchRow::builder()
+        .title(i18n("Idle Inhibit"))
+        .subtitle(i18n("Prevent screensaver while running"))
+        .active(profile.idle_inhibit)
+        .build();
+    perf.add(&idle_inhibit);
+
+    let governor_model = gtk4::StringList::new(&[
+        "", "performance", "powersave", "ondemand", "conservative", "schedutil",
+    ]);
+    let governor_row = adw::ComboRow::builder()
+        .title(i18n("CPU Governor"))
+        .subtitle(i18n("Override CPU frequency governor"))
+        .model(&governor_model)
+        .build();
+    governor_row.set_selected(find_index(&governor_model, &profile.cpu_governor));
+    perf.add(&governor_row);
+
+    let installed = bigame_core::sched::detect_installed();
+    let installed_refs: Vec<&str> = installed.iter().map(String::as_str).collect();
+    let sched_model = gtk4::StringList::new(&installed_refs);
+    let sched_row = adw::ComboRow::builder()
+        .title(i18n("Scheduler"))
+        .model(&sched_model)
+        .build();
+    sched_row.set_selected(find_index(&sched_model, &profile.scx_sched));
+    
+    let info_btn2 = gtk4::Button::builder()
+        .icon_name("dialog-information-symbolic")
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat", "circular"])
+        .tooltip_text(i18n("Learn about Schedulers"))
+        .build();
+    info_btn2.connect_clicked(|btn| {
+        if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
+            crate::widgets::scheduler_info::show(&win);
+        }
+    });
+    sched_row.add_suffix(&info_btn2);
+
+    perf.add(&sched_row);
+
+    let mode_model =
+        gtk4::StringList::new(&["default", "gaming", "power", "latency", "server"]);
+    let mode_row = adw::ComboRow::builder()
+        .title(i18n("Scheduler Mode"))
+        .model(&mode_model)
+        .build();
+    mode_row.set_selected(find_index(&mode_model, &profile.scx_sched_props));
+    perf.add(&mode_row);
+
+    let custom_flags_row = adw::EntryRow::builder()
+        .title(i18n("Custom Scheduler Flags"))
+        .text(&profile.scx_custom_flags)
+        .build();
+    custom_flags_row.set_tooltip_text(Some(&i18n("Extra CLI flags for the sched-ext scheduler (e.g. --slice-us=800)")));
+    perf.add(&custom_flags_row);
+
+    let vcache_model = gtk4::StringList::new(&["none", "cache", "freq"]);
+    let vcache_row = adw::ComboRow::builder()
+        .title(i18n("VCache Mode"))
+        .model(&vcache_model)
+        .build();
+    vcache_row.set_selected(find_index(&vcache_model, &profile.vcache_mode));
+    perf.add(&vcache_row);
+    page.add(&perf);
+
+    // Scripts group
+    let scripts = adw::PreferencesGroup::new();
+    scripts.set_title(&i18n("Scripts"));
+
+    let start_row = adw::EntryRow::builder()
+        .title(i18n("Start Script"))
+        .text(profile.start_script.as_deref().unwrap_or(""))
+        .build();
+    scripts.add(&start_row);
+
+    let stop_row = adw::EntryRow::builder()
+        .title(i18n("Stop Script"))
+        .text(profile.stop_script.as_deref().unwrap_or(""))
+        .build();
+    scripts.add(&stop_row);
+    page.add(&scripts);
+
+    // Gamescope per-game overrides
+    let gs_group = adw::PreferencesGroup::new();
+    gs_group.set_title(&i18n("Gamescope"));
+    gs_group.set_description(Some(&i18n("Per-game overrides (leave disabled for global defaults)")));
+
+    // Pre-populate with the saved global defaults if no per-game override exists.
+    let gs_cfg = profile.gamescope.clone()
+        .unwrap_or_else(bigame_core::gamescope::load_global);
+
+    let gs_enable = adw::SwitchRow::builder()
+        .title(i18n("Override Gamescope"))
+        .active(profile.gamescope.is_some())
+        .build();
+    gs_group.add(&gs_enable);
+
+    let gs_width = adw::SpinRow::new(
+        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.width), 640.0, 7680.0, 1.0, 10.0, 0.0)),
+        1.0, 0,
+    );
+    gs_width.set_title(&i18n("Width"));
+    gs_width.set_sensitive(profile.gamescope.is_some());
+    gs_group.add(&gs_width);
+
+    let gs_height = adw::SpinRow::new(
+        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.height), 480.0, 4320.0, 1.0, 10.0, 0.0)),
+        1.0, 0,
+    );
+    gs_height.set_title(&i18n("Height"));
+    gs_height.set_sensitive(profile.gamescope.is_some());
+    gs_group.add(&gs_height);
+
+    let gs_fsr = adw::SwitchRow::builder()
+        .title(i18n("FSR"))
+        .active(gs_cfg.fsr)
+        .sensitive(profile.gamescope.is_some())
+        .build();
+    gs_group.add(&gs_fsr);
+
+    let gs_fps = adw::SpinRow::new(
+        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.framerate_limit), 0.0, 500.0, 1.0, 10.0, 0.0)),
+        1.0, 0,
+    );
+    gs_fps.set_title(&i18n("Framerate Limit"));
+    gs_fps.set_sensitive(profile.gamescope.is_some());
+    gs_group.add(&gs_fps);
+
+    // Toggle sensitivity of gamescope fields
+    let w_ref = gs_width.clone();
+    let h_ref = gs_height.clone();
+    let fsr_ref = gs_fsr.clone();
+    let fps_ref = gs_fps.clone();
+    gs_enable.connect_active_notify(move |sw| {
+        let on = sw.is_active();
+        w_ref.set_sensitive(on);
+        h_ref.set_sensitive(on);
+        fsr_ref.set_sensitive(on);
+        fps_ref.set_sensitive(on);
+    });
+    page.add(&gs_group);
+
+    // Frame Generation group
+    let fg_group = adw::PreferencesGroup::new();
+    fg_group.set_title(&i18n("Frame Generation (LSFG-VK)"));
+
+    let fg_dll_path = adw::EntryRow::builder()
+        .title(i18n("Path to Lossless.dll"))
+        .text(profile.fg_dll_path.as_deref().unwrap_or(""))
+        .build();
+    
+    let file_btn = gtk4::Button::builder()
+        .icon_name("folder-open-symbolic")
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    fg_dll_path.add_suffix(&file_btn);
+
+    let info_btn = gtk4::Button::builder()
+        .icon_name("dialog-information-symbolic")
+        .tooltip_text(i18n("Lossless Scaling is proprietary.
+Click to visit losslessscaling.com"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat", "circular"])
+        .build();
+    info_btn.connect_clicked(|btn| {
+        if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Lossless Scaling Required"))
+                .body(i18n("This feature uses LSFG-VK which requires the proprietary Lossless.dll to function.
+
+You must legally acquire Lossless Scaling on Steam or other platforms to obtain this file."))
+                .body_use_markup(true)
+                .build();
+            
+            dialog.add_response("cancel", &i18n("Close"));
+            dialog.add_response("web", &i18n("Visit Website"));
+            dialog.set_response_appearance("web", adw::ResponseAppearance::Suggested);
+
+            let win_clone = win.clone();
+            dialog.choose(&win, gtk4::gio::Cancellable::NONE, move |response| {
+                if response == "web" {
+                    let launcher = gtk4::UriLauncher::new("https://losslessscaling.com/");
+                    launcher.launch(Some(&win_clone), gtk4::gio::Cancellable::NONE, |_| {});
+                }
+            });
+        }
+    });
+    fg_dll_path.add_suffix(&info_btn);
+
+    let r_clone = fg_dll_path.clone();
+    file_btn.connect_clicked(move |btn| {
+        let dialog = gtk4::FileDialog::builder().title(i18n("Select Lossless.dll")).modal(true).build();
+        let f = gtk4::FileFilter::new();
+        f.set_name(Some("DLL files (*.dll)"));
+        f.add_pattern("*.dll");
+        let filters = gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&f);
+        dialog.set_filters(Some(&filters));
+        
+        let r = r_clone.clone();
+        if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
+            dialog.open(Some(&win), gio::Cancellable::NONE, move |res| {
+                if let Ok(file) = res {
+                    if let Some(path) = file.path() {
+                        r.set_text(&path.to_string_lossy());
+                    }
+                }
+            });
+        }
+    });
+    fg_group.add(&fg_dll_path);
+
+    let fg_multiplier = adw::SpinRow::new(
+        Some(&gtk4::Adjustment::new(f64::from(profile.fg_multiplier).max(1.0).min(20.0), 1.0, 20.0, 1.0, 1.0, 0.0)),
+        1.0, 0,
+    );
+    fg_multiplier.set_title(&i18n("Multiplier (1-20x)"));
+    fg_group.add(&fg_multiplier);
+
+    let fg_flow_scale = adw::SpinRow::new(
+        Some(&gtk4::Adjustment::new(f64::from(profile.fg_flow_scale).max(25.0).min(100.0), 25.0, 100.0, 1.0, 10.0, 0.0)),
+        1.0, 0,
+    );
+    fg_flow_scale.set_title(&i18n("Flow Scale (25-100%)"));
+    fg_group.add(&fg_flow_scale);
+
+    let fg_perf_mode = adw::SwitchRow::builder()
+        .title(i18n("Performance Mode"))
+        .active(profile.fg_perf_mode)
+        .build();
+    fg_group.add(&fg_perf_mode);
+
+    let fg_hdr = adw::SwitchRow::builder()
+        .title(i18n("HDR Mode"))
+        .active(profile.fg_hdr)
+        .build();
+    fg_group.add(&fg_hdr);
+
+    let fg_present_model = gtk4::StringList::new(&[
+        &i18n("VSync/FIFO (default)"),
+        &i18n("Recommended"),
+        &i18n("Mailbox"),
+        &i18n("Immediate"),
+    ]);
+    let fg_present_mode = adw::ComboRow::new();
+    fg_present_mode.set_title(&i18n("Present Mode"));
+    fg_present_mode.set_model(Some(&fg_present_model));
+    fg_present_mode.set_selected(profile.fg_present_mode);
+    fg_group.add(&fg_present_mode);
+
+    page.add(&fg_group);
+
+    PerfWidgets {
+        perf_mode,
+        idle_inhibit,
+        governor_model,
+        governor_row,
+        sched_model,
+        sched_row,
+        mode_model,
+        mode_row,
+        custom_flags_row,
+        vcache_model,
+        vcache_row,
+        start_row,
+        stop_row,
+        gs_enable,
+        gs_width,
+        gs_height,
+        gs_fsr,
+        gs_fps,
+        fg_dll_path,
+        fg_multiplier,
+        fg_flow_scale,
+        fg_perf_mode,
+        fg_hdr,
+        fg_present_model,
+        fg_present_mode,
+    }
+}
+
+/// Intermediate struct holding references to detail page widgets.
+struct PerfWidgets {
+    perf_mode: adw::SwitchRow,
+    idle_inhibit: adw::SwitchRow,
+    governor_model: gtk4::StringList,
+    governor_row: adw::ComboRow,
+    sched_model: gtk4::StringList,
+    sched_row: adw::ComboRow,
+    mode_model: gtk4::StringList,
+    mode_row: adw::ComboRow,
+    custom_flags_row: adw::EntryRow,
+    vcache_model: gtk4::StringList,
+    vcache_row: adw::ComboRow,
+    start_row: adw::EntryRow,
+    stop_row: adw::EntryRow,
+    gs_enable: adw::SwitchRow,
+    gs_width: adw::SpinRow,
+    gs_height: adw::SpinRow,
+    gs_fsr: adw::SwitchRow,
+    gs_fps: adw::SpinRow,
+    fg_dll_path: adw::EntryRow,
+    fg_multiplier: adw::SpinRow,
+    fg_flow_scale: adw::SpinRow,
+    fg_perf_mode: adw::SwitchRow,
+    fg_hdr: adw::SwitchRow,
+    /// Held to maintain GObject lifetime of the ComboRow model.
+    #[allow(dead_code)]
+    fg_present_model: gtk4::StringList,
+    fg_present_mode: adw::ComboRow,
+}
+
+/// Build a profile detail/editor page with save button.
+#[allow(clippy::too_many_lines)]
+fn build_detail_page_for(profile: &GameProfile) -> adw::NavigationPage {
+    let page = adw::PreferencesPage::new();
+    let shared = Rc::new(RefCell::new(profile.clone()));
+
+    // Identity group
+    let identity = adw::PreferencesGroup::new();
+    identity.set_title(&i18n("Profile"));
+
+    let name_row = adw::EntryRow::builder()
+        .title(i18n("Process Name"))
+        .text(&profile.name)
+        .build();
+    identity.add(&name_row);
+    page.add(&identity);
+
+    let w = build_perf_widgets(&page, profile);
+
+    // Save button
+    let save_btn = gtk4::Button::builder()
+        .label(i18n("Save Profile"))
+        .css_classes(["suggested-action", "pill"])
+        .halign(gtk4::Align::Center)
+        .margin_top(12)
+        .build();
+    let save_group = adw::PreferencesGroup::new();
+    save_group.add(&save_btn);
+    page.add(&save_group);
+
+    // Collect widget values on save
+    let cfg = Rc::clone(&shared);
+    save_btn.connect_clicked(move |btn| {
+        {
+            let mut p = cfg.borrow_mut();
+            p.name = name_row.text().to_string();
+            p.performance_mode = w.perf_mode.is_active();
+            p.idle_inhibit = w.idle_inhibit.is_active();
+            if let Some(v) = w.governor_model.string(w.governor_row.selected()) {
+                p.cpu_governor = v.to_string();
+            }
+            if let Some(v) = w.sched_model.string(w.sched_row.selected()) {
+                p.scx_sched = v.to_string();
+            }
+            if let Some(v) = w.mode_model.string(w.mode_row.selected()) {
+                p.scx_sched_props = v.to_string();
+            }
+            p.scx_custom_flags = w.custom_flags_row.text().to_string();
+            if let Some(v) = w.vcache_model.string(w.vcache_row.selected()) {
+                p.vcache_mode = v.to_string();
+            }
+            let start = w.start_row.text().to_string();
+            p.start_script = if start.is_empty() { None } else { Some(start) };
+            let stop = w.stop_row.text().to_string();
+            p.stop_script = if stop.is_empty() { None } else { Some(stop) };
+
+            // Per-game Gamescope overrides
+            p.gamescope = if w.gs_enable.is_active() {
+                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                {
+                    Some(bigame_core::gamescope::Config {
+                        width: w.gs_width.value() as u32,
+                        height: w.gs_height.value() as u32,
+                        fsr: w.gs_fsr.is_active(),
+                        fsr_sharpness: 5,
+                        framerate_limit: w.gs_fps.value() as u32,
+                        mangohud: false,
+                    })
+                }
+            } else {
+                None
+            };
+
+            #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+            {
+                let dll = w.fg_dll_path.text().to_string();
+                p.fg_dll_path = if dll.is_empty() { None } else { Some(dll) };
+                p.fg_multiplier = w.fg_multiplier.value() as u32;
+                p.fg_flow_scale = w.fg_flow_scale.value() as u32;
+                p.fg_perf_mode = w.fg_perf_mode.is_active();
+                p.fg_hdr = w.fg_hdr.is_active();
+                p.fg_present_mode = w.fg_present_mode.selected();
+            }
+        }
+        let profile_clone = cfg.borrow().clone();
+
+        // Block save only on hard errors (empty/invalid name, zero resolution).
+        let errors = bigame_core::profiles::critical_errors(&profile_clone);
+        if !errors.is_empty() {
+            toast::show(btn, &errors.join("; "));
+            return;
+        }
+
+        // Advisory warnings (VCache on non-AMD, scheduler mismatch, etc.) —
+        // show as toast but do NOT block saving.
+        let warnings = bigame_core::profiles::validate(&profile_clone);
+        let soft: Vec<_> = warnings.iter()
+            .filter(|w| !errors.contains(w))
+            .cloned()
+            .collect();
+        if !soft.is_empty() {
+            toast::show(btn, &format!("⚠ {}", soft.join("; ")));
+        }
+
+        btn.set_sensitive(false);
+        btn.set_label(&i18n("Saving…"));
+        let btn_ref = btn.clone();
+        gio::spawn_blocking(move || bigame_core::profiles::save(&profile_clone));
+        let btn_later = btn_ref.clone();
+        toast::show(btn, &i18n("Profile saved"));
+        glib::timeout_add_local_once(std::time::Duration::from_secs(2), move || {
+            btn_later.set_sensitive(true);
+            btn_later.set_label(&i18n("Save Profile"));
+        });
+    });
+
+    let toolbar = adw::ToolbarView::new();
+    let detail_header = adw::HeaderBar::new();
+    detail_header.set_show_end_title_buttons(false);
+    detail_header.set_show_start_title_buttons(false);
+
+    // Delete button (only for existing profiles)
+    if !profile.name.is_empty() {
+        // Export button
+        let export_btn = gtk4::Button::builder()
+            .icon_name("document-save-as-symbolic")
+            .tooltip_text(i18n("Export Profile"))
+            .build();
+        let export_name = profile.name.clone();
+        export_btn.connect_clicked(move |btn| {
+            let dialog = gtk4::FileDialog::builder()
+                .title(i18n("Export Profile"))
+                .initial_name(format!("{export_name}.conf"))
+                .build();
+            let btn_ref = btn.clone();
+            let name = export_name.clone();
+            let win = btn.root().and_downcast::<gtk4::Window>();
+            dialog.save(win.as_ref(), gio::Cancellable::NONE, move |result| {
+                if let Ok(file) = result {
+                    if let Some(path) = file.path() {
+                        match bigame_core::profiles::export(&name, &path) {
+                            Ok(()) => toast::show(&btn_ref, &i18n("Profile exported")),
+                            Err(e) => toast::show(
+                                &btn_ref,
+                                &i18n("Export failed: %s").replace("%s", &e.to_string()),
+                            ),
+                        }
+                    }
+                }
+            });
+        });
+        detail_header.pack_end(&export_btn);
+
+        // Activate profile button — registers current process in GameMode
+        let activate_btn = gtk4::Button::builder()
+            .icon_name("media-playback-start-symbolic")
+            .tooltip_text(i18n("Activate Profile"))
+            .build();
+        activate_btn.connect_clicked(move |btn| {
+            let btn_ref = btn.clone();
+            gio::spawn_blocking(bigame_core::dbus::gamemode_register);
+            toast::show(&btn_ref, &i18n("Profile activated via GameMode"));
+        });
+        detail_header.pack_end(&activate_btn);
+
+        let delete_btn = gtk4::Button::builder()
+            .icon_name("user-trash-symbolic")
+            .tooltip_text(i18n("Delete Profile"))
+            .css_classes(["destructive-action"])
+            .build();
+        let profile_name = profile.name.clone();
+        delete_btn.connect_clicked(move |btn| {
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Delete Profile?"))
+                .body(i18n("Remove \"%s\" permanently?").replace("%s", &profile_name))
+                .build();
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("delete", &i18n("Delete"));
+            dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_close_response("cancel");
+
+            let name = profile_name.clone();
+            let btn_ref = btn.clone();
+            dialog.connect_response(None, move |_dlg, response| {
+                if response == "delete" {
+                    let n = name.clone();
+                    btn_ref.set_sensitive(false);
+                    toast::show(&btn_ref, &i18n("Profile deleted"));
+                    gio::spawn_blocking(move || {
+                        let _ = bigame_core::profiles::delete(&n);
+                    });
+                }
+            });
+
+            let widget = btn.root().and_downcast::<gtk4::Window>();
+            dialog.present(widget.as_ref());
+        });
+        detail_header.pack_end(&delete_btn);
+    }
+
+    toolbar.add_top_bar(&detail_header);
+    toolbar.set_content(Some(&page));
+
+    let title = if profile.name.is_empty() {
+        i18n("New Profile")
+    } else {
+        profile.name.clone()
+    };
+    adw::NavigationPage::builder()
+        .title(&title)
+        .child(&toolbar)
+        .build()
+}
+
+fn refresh_profile_list(list_box: &gtk4::ListBox, nav: &adw::NavigationView) {
+    // Clear existing
+    while let Some(child) = list_box.first_child() {
+        list_box.remove(&child);
+    }
+
+    let names = bigame_core::profiles::list_names();
+    if names.is_empty() {
+        let row = adw::ActionRow::builder()
+            .title(i18n("No Profiles Found"))
+            .subtitle(i18n("Games detected by falcond will appear here"))
+            .sensitive(false)
+            .build();
+        list_box.append(&row);
+    } else {
+        for name in &names {
+            list_box.append(&make_profile_row(name, nav, list_box));
+        }
+    }
+}

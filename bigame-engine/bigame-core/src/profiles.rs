@@ -1,0 +1,715 @@
+//! falcond game profile management (CRUD + sync).
+
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+
+/// Default system profiles directory.
+pub const SYSTEM_PROFILES_DIR: &str = "/usr/share/falcond/profiles";
+
+/// User override profiles directory.
+pub const USER_PROFILES_DIR: &str = "/usr/share/falcond/profiles/user";
+
+/// A falcond game profile.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameProfile {
+    /// Executable/process name to match.
+    pub name: String,
+    /// Enable performance mode for this game.
+    #[serde(default)]
+    pub performance_mode: bool,
+    /// sched-ext scheduler (none, bpfland, lavd, rusty, flash).
+    #[serde(default)]
+    pub scx_sched: String,
+    /// Scheduler mode (default, gaming, power, latency, server).
+    #[serde(default)]
+    pub scx_sched_props: String,
+    /// `VCache` mode (none, cache, freq).
+    #[serde(default)]
+    pub vcache_mode: String,
+    /// Script to run when game starts.
+    pub start_script: Option<String>,
+    /// Script to run when game stops.
+    pub stop_script: Option<String>,
+    /// Suppress screensaver while running.
+    #[serde(default)]
+    pub idle_inhibit: bool,
+    /// CPU frequency governor override (empty = no change).
+    #[serde(default)]
+    pub cpu_governor: String,
+    /// Custom sched-ext flags (e.g. `--slice-us=800 --verbose`).
+    #[serde(default)]
+    pub scx_custom_flags: String,
+    /// Is this profile active?
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    /// Per-game Gamescope configuration (None = use global defaults).
+    #[serde(default)]
+    pub gamescope: Option<crate::gamescope::Config>,
+    /// Frame generation multiplier (1-4).
+    #[serde(default = "default_fg_multiplier")]
+    pub fg_multiplier: u32,
+    /// Optical flow scale (0-100).
+    #[serde(default = "default_fg_flow_scale")]
+    pub fg_flow_scale: u32,
+    /// Performance mode for frame generation.
+    #[serde(default)]
+    pub fg_perf_mode: bool,
+    /// OTF quality preset: 0=Performance, 1=Balanced, 2=Quality.
+    #[serde(default = "default_fg_quality")]
+    pub fg_quality: u32,
+    /// Path to custom Lossless.dll.
+    pub fg_dll_path: Option<String>,
+    /// HDR support for frame generation.
+    #[serde(default)]
+    pub fg_hdr: bool,
+    /// Present mode for frame generation (0=VSync/FIFO, 1=Mailbox, 2=Immediate).
+    #[serde(default)]
+    pub fg_present_mode: u32,
+}
+
+fn default_enabled() -> bool { true }
+fn default_fg_multiplier() -> u32 { 1 }
+fn default_fg_flow_scale() -> u32 { 100 }
+fn default_fg_quality() -> u32 { 1 }
+
+impl Default for GameProfile {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            enabled: true,
+            performance_mode: true,
+            scx_sched: "none".into(),
+            scx_sched_props: "default".into(),
+            vcache_mode: "none".into(),
+            start_script: None,
+            stop_script: None,
+            idle_inhibit: false,
+            cpu_governor: String::new(),
+            scx_custom_flags: String::new(),
+            gamescope: None,
+            fg_multiplier: 1,
+            fg_flow_scale: 100,
+            fg_perf_mode: false,
+            fg_quality: 1,
+            fg_dll_path: None,
+            fg_hdr: false,
+            fg_present_mode: 0,
+        }
+    }
+}
+
+/// Validate a profile and return a list of warnings (empty = valid).
+///
+/// Checks for common misconfigurations that would prevent falcond from
+/// applying the profile correctly.
+#[must_use]
+pub fn validate(profile: &GameProfile) -> Vec<String> {
+    let mut warnings = Vec::new();
+
+    if profile.name.trim().is_empty() {
+        warnings.push("Profile name is required".into());
+    }
+    if profile.name.contains(std::path::MAIN_SEPARATOR) || profile.name.contains("..") {
+        warnings.push("Profile name contains invalid path characters".into());
+    }
+    // Scheduler mode without scheduler selected
+    if profile.scx_sched == "none" && profile.scx_sched_props != "default" {
+        warnings.push("Scheduler mode set but no scheduler selected".into());
+    }
+    // Custom flags without scheduler
+    if profile.scx_sched == "none" && !profile.scx_custom_flags.trim().is_empty() {
+        warnings.push("Custom sched-ext flags set but no scheduler selected".into());
+    }
+    // VCache on non-AMD
+    if profile.vcache_mode != "none" && !crate::vcache::is_available() {
+        warnings.push("VCache mode set but AMD 3D V-Cache not detected".into());
+    }
+    // Gamescope resolution sanity
+    if let Some(ref gs) = profile.gamescope {
+        if gs.width == 0 || gs.height == 0 {
+            warnings.push("Gamescope resolution cannot be zero".into());
+        }
+    }
+    // Script paths: check they look like absolute paths
+    if let Some(ref s) = profile.start_script {
+        if !s.starts_with('/') {
+            warnings.push("Start script should be an absolute path".into());
+        }
+    }
+    if let Some(ref s) = profile.stop_script {
+        if !s.starts_with('/') {
+            warnings.push("Stop script should be an absolute path".into());
+        }
+    }
+    warnings
+}
+
+/// Hard errors that MUST block saving.
+///
+/// Subset of `validate()`: only checks that make the profile completely unusable
+/// (empty/invalid name, zero Gamescope resolution). Advisory checks like
+/// VCache-on-non-AMD or missing scheduler are returned by `validate()` but
+/// should not prevent the user from saving.
+#[must_use]
+pub fn critical_errors(profile: &GameProfile) -> Vec<String> {
+    let mut errors = Vec::new();
+    if profile.name.trim().is_empty() {
+        errors.push("Profile name is required".into());
+    }
+    if profile.name.contains(std::path::MAIN_SEPARATOR) || profile.name.contains("..") {
+        errors.push("Profile name contains invalid path characters".into());
+    }
+    if let Some(ref gs) = profile.gamescope {
+        if gs.width == 0 || gs.height == 0 {
+            errors.push("Gamescope resolution cannot be zero".into());
+        }
+    }
+    errors
+}
+
+/// List all profile names from system + user directories.
+///
+/// User profiles override system ones (same filename = same profile).
+#[must_use]
+pub fn list_names() -> Vec<String> {
+    let mut names = Vec::new();
+    for dir in [
+        Path::new(USER_PROFILES_DIR),
+        Path::new(SYSTEM_PROFILES_DIR),
+    ] {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().is_some_and(|e| e == "conf") {
+                    if let Some(stem) = path.file_stem() {
+                        let name = stem.to_string_lossy().into_owned();
+                        if !names.contains(&name) {
+                            names.push(name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    names.sort();
+    names
+}
+
+/// Load a profile by name. Checks user dir first, then system.
+///
+/// Supports both TOML (quoted strings) and otter_conf (bare identifiers) formats.
+///
+/// # Errors
+/// Returns error if file is unreadable or unparseable.
+pub fn load(name: &str) -> Result<GameProfile> {
+    let path = resolve_path(name);
+    let content = std::fs::read_to_string(&path)
+        .with_context(|| format!("read profile: {}", path.display()))?;
+    // Try TOML first (backwards compat)
+    if let Ok(p) = toml::from_str::<GameProfile>(&content) {
+        return Ok(p);
+    }
+    // Fall back to otter_conf key=value parsing
+    Ok(parse_profile_otter_conf(&content))
+}
+
+/// Parse a profile from otter_conf format (bare identifiers for enums).
+fn parse_profile_otter_conf(content: &str) -> GameProfile {
+    let mut p = GameProfile::default();
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let Some((key, val)) = line.split_once('=') else {
+            continue;
+        };
+        let key = key.trim();
+        let val = val.trim().trim_matches('"');
+        match key {
+            "name" => p.name = val.to_string(),
+            "performance_mode" => p.performance_mode = val == "true",
+            "scx_sched" => p.scx_sched = val.to_string(),
+            "scx_sched_props" => p.scx_sched_props = val.to_string(),
+            "vcache_mode" => p.vcache_mode = val.to_string(),
+            "idle_inhibit" => p.idle_inhibit = val == "true",
+            "start_script" => {
+                if !val.is_empty() {
+                    p.start_script = Some(val.to_string());
+                }
+            }
+            "stop_script" => {
+                if !val.is_empty() {
+                    p.stop_script = Some(val.to_string());
+                }
+            }
+            "cpu_governor" => p.cpu_governor = val.to_string(),
+            "scx_custom_flags" => p.scx_custom_flags = val.to_string(),
+            "enabled" => p.enabled = val == "true",
+            "fg_multiplier" => p.fg_multiplier = val.parse().unwrap_or(1),
+            "fg_flow_scale" => p.fg_flow_scale = val.parse().unwrap_or(100),
+            "fg_perf_mode" => p.fg_perf_mode = val == "true",
+            "fg_quality" => p.fg_quality = val.parse().unwrap_or(1),
+            "fg_dll_path" => {
+                if !val.is_empty() {
+                    p.fg_dll_path = Some(val.to_string());
+                }
+            }
+            "fg_hdr" => p.fg_hdr = val == "true",
+            "fg_present_mode" => p.fg_present_mode = val.parse().unwrap_or(0),
+            _ => {}
+        }
+    }
+    p
+}
+
+/// Serialize a game profile to otter_conf format (bare identifiers for enums).
+///
+/// Only emits fields that falcond's `UserProfileConfig` / `ProfileConfig` understand.
+/// Extra UI-only fields (`enabled`, `scx_custom_flags`, `fg_*`, `gamescope`) are
+/// appended with quotes so otter_conf skips them (unknown fields are ignored).
+fn serialize_profile_otter_conf(profile: &GameProfile) -> String {
+    let mut out = String::new();
+    // name: always a quoted string
+    out.push_str(&format!("name = \"{}\"\n", profile.name));
+    // Booleans: bare
+    out.push_str(&format!("performance_mode = {}\n", profile.performance_mode));
+    // Enums: bare identifiers (no quotes!)
+    out.push_str(&format!("scx_sched = {}\n", profile.scx_sched));
+    out.push_str(&format!("scx_sched_props = {}\n", profile.scx_sched_props));
+    out.push_str(&format!("vcache_mode = {}\n", profile.vcache_mode));
+    out.push_str(&format!("idle_inhibit = {}\n", profile.idle_inhibit));
+    // Strings: quoted
+    if let Some(ref s) = profile.start_script {
+        if !s.is_empty() {
+            out.push_str(&format!("start_script = \"{s}\"\n"));
+        }
+    }
+    if let Some(ref s) = profile.stop_script {
+        if !s.is_empty() {
+            out.push_str(&format!("stop_script = \"{s}\"\n"));
+        }
+    }
+    if !profile.cpu_governor.is_empty() {
+        out.push_str(&format!("cpu_governor = \"{}\"\n", profile.cpu_governor));
+    }
+    // UI-only fields (otter_conf ignores unknown keys via skipValue)
+    out.push_str(&format!("scx_custom_flags = \"{}\"\n", profile.scx_custom_flags));
+    out.push_str(&format!("enabled = {}\n", profile.enabled));
+    out.push_str(&format!("fg_multiplier = {}\n", profile.fg_multiplier));
+    out.push_str(&format!("fg_flow_scale = {}\n", profile.fg_flow_scale));
+    out.push_str(&format!("fg_perf_mode = {}\n", profile.fg_perf_mode));
+    out.push_str(&format!("fg_quality = {}\n", profile.fg_quality));
+    if let Some(ref s) = profile.fg_dll_path {
+        out.push_str(&format!("fg_dll_path = \"{s}\"\n"));
+    }
+    out.push_str(&format!("fg_hdr = {}\n", profile.fg_hdr));
+    out.push_str(&format!("fg_present_mode = {}\n", profile.fg_present_mode));
+    out
+}
+
+/// Save a profile to the user directory via sudo.
+///
+/// # Errors
+/// Returns error if serialization or sudo write fails.
+pub fn save(profile: &GameProfile) -> Result<()> {
+    let path = user_path(&profile.name);
+    let content = serialize_profile_otter_conf(profile);
+
+    // Ensure directory exists via sudo. We wait for it to finish.
+    let mkdir_status = std::process::Command::new("sudo")
+        .args(["-n", "/usr/bin/mkdir", "-p", USER_PROFILES_DIR])
+        .status()
+        .context("spawn sudo mkdir")?;
+    
+    anyhow::ensure!(mkdir_status.success(), "Failed to create profiles directory");
+
+    let mut child = std::process::Command::new("sudo")
+        .args(["-n", "/usr/bin/tee", &path.display().to_string()])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .context("spawn sudo tee (profile)")?;
+
+    if let Some(ref mut stdin) = child.stdin {
+        use std::io::Write;
+        stdin.write_all(content.as_bytes()).context("write profile")?;
+    }
+
+    let exit = child.wait().context("wait sudo tee")?;
+    anyhow::ensure!(exit.success(), "sudo tee profile failed: {exit}");
+
+    // Signal falcond to reload profiles
+    std::process::Command::new("sudo")
+        .args(["-n", "/usr/bin/pkill", "-HUP", "falcond"])
+        .status()
+        .ok();
+
+    // Sync FG parameters to ~/.config/lsfg-vk/conf.toml.
+    // lsfg-vk hot-reloads on mtime change — no process restart needed.
+    // Pacing is always "none" — lsfg-vk 1.x only supports None.
+    crate::fg::write_profile(
+        &profile.name,
+        profile.fg_multiplier,
+        profile.fg_flow_scale,
+        profile.fg_perf_mode,
+        profile.fg_hdr,
+        profile.fg_present_mode,
+    )?;
+
+    // Apply CPU governor immediately as a best-effort global effect.
+    // Per-game scoping is handled by falcond's cpu_governor field at activation time.
+    if !profile.cpu_governor.is_empty() {
+        if let Err(e) = crate::governor::set(&profile.cpu_governor) {
+            tracing::warn!(
+                "failed to apply cpu_governor '{}' on profile save: {e:#}",
+                profile.cpu_governor
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Delete a user profile by name via sudo rm.
+///
+/// # Errors
+/// Returns error if the file doesn't exist or sudo fails.
+pub fn delete(name: &str) -> Result<()> {
+    let path = user_path(name);
+    anyhow::ensure!(path.exists(), "profile not found: {}", path.display());
+
+    let status = std::process::Command::new("sudo")
+        .args(["-n", "/usr/bin/rm", &path.display().to_string()])
+        .status()
+        .context("sudo rm profile")?;
+    anyhow::ensure!(status.success(), "sudo rm failed: {status}");
+
+    std::process::Command::new("sudo")
+        .args(["-n", "/usr/bin/pkill", "-HUP", "falcond"])
+        .status()
+        .ok();
+
+    // Remove FG entry from lsfg-vk config (best-effort).
+    let _ = crate::fg::delete_profile(name);
+
+    Ok(())
+}
+
+/// Resolve profile path: user dir first, then system.
+fn resolve_path(name: &str) -> PathBuf {
+    let user = user_path(name);
+    if user.exists() {
+        return user;
+    }
+    system_path(name)
+}
+
+fn user_path(name: &str) -> PathBuf {
+    Path::new(USER_PROFILES_DIR).join(format!("{name}.conf"))
+}
+
+fn system_path(name: &str) -> PathBuf {
+    Path::new(SYSTEM_PROFILES_DIR).join(format!("{name}.conf"))
+}
+
+/// Check if a profile exists in the user directory (meaning it can be deleted/reverted).
+#[must_use]
+pub fn is_user_profile(name: &str) -> bool {
+    user_path(name).exists()
+}
+
+/// Check if a profile exists in the system directory.
+#[must_use]
+pub fn is_system_profile(name: &str) -> bool {
+    system_path(name).exists()
+}
+
+/// Export a profile to a local file (no root required).
+///
+/// # Errors
+/// Returns error if the profile cannot be loaded or the target path is unwritable.
+pub fn export(name: &str, dest: &Path) -> Result<()> {
+    let profile = load(name)?;
+    let content = toml::to_string_pretty(&profile).context("serialize profile for export")?;
+    std::fs::write(dest, content).with_context(|| format!("write export: {}", dest.display()))
+}
+
+/// Import a profile from a local TOML file into the user profiles directory.
+///
+/// # Errors
+/// Returns error if the file is unreadable, contains invalid TOML, or pkexec write fails.
+pub fn import(src: &Path) -> Result<String> {
+    let content =
+        std::fs::read_to_string(src).with_context(|| format!("read import: {}", src.display()))?;
+    let profile: GameProfile = toml::from_str(&content).context("parse imported profile TOML")?;
+    anyhow::ensure!(!profile.name.is_empty(), "imported profile has no name");
+    let name = profile.name.clone();
+    save(&profile)?;
+    Ok(name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_profile_values() {
+        let p = GameProfile::default();
+        assert!(p.name.is_empty());
+        assert!(p.performance_mode);
+        assert_eq!(p.scx_sched, "none");
+        assert_eq!(p.scx_sched_props, "default");
+        assert_eq!(p.vcache_mode, "none");
+        assert!(p.start_script.is_none());
+        assert!(p.stop_script.is_none());
+        assert!(!p.idle_inhibit);
+    }
+
+    #[test]
+    fn round_trip_serialization() {
+        let p = GameProfile {
+            name: "Cyberpunk2077.exe".into(),
+            performance_mode: true,
+            scx_sched: "bpfland".into(),
+            scx_sched_props: "gaming".into(),
+            vcache_mode: "cache".into(),
+            start_script: Some("/opt/scripts/start.sh".into()),
+            stop_script: None,
+            idle_inhibit: true,
+            cpu_governor: "performance".into(),
+            scx_custom_flags: "--slice-us=800".into(),
+            gamescope: None,
+            ..Default::default()
+        };
+        let toml_str = toml::to_string_pretty(&p).unwrap();
+        let parsed: GameProfile = toml::from_str(&toml_str).unwrap();
+        assert_eq!(parsed.name, "Cyberpunk2077.exe");
+        assert!(parsed.performance_mode);
+        assert_eq!(parsed.scx_sched, "bpfland");
+        assert_eq!(parsed.vcache_mode, "cache");
+        assert_eq!(parsed.start_script.as_deref(), Some("/opt/scripts/start.sh"));
+        assert!(parsed.stop_script.is_none());
+        assert!(parsed.idle_inhibit);
+    }
+
+    #[test]
+    fn partial_toml_uses_defaults() {
+        let content = "name = \"test.exe\"\n";
+        let p: GameProfile = toml::from_str(content).unwrap();
+        assert_eq!(p.name, "test.exe");
+        assert!(!p.performance_mode); // serde default = false (no custom default fn)
+        assert_eq!(p.scx_sched, "");
+        assert!(!p.idle_inhibit);
+    }
+
+    #[test]
+    fn resolve_path_prefers_user() {
+        // Without real directories, resolve_path falls back to system
+        let rp = resolve_path("test_game");
+        assert!(rp.to_string_lossy().contains("test_game.conf"));
+    }
+
+    #[test]
+    fn export_import_round_trip() {
+        let tmp = crate::tests::tempdir("export_import");
+        let src = tmp.join("test_profile.conf");
+
+        // Create a profile file manually
+        let profile = GameProfile {
+            name: "export_test".into(),
+            performance_mode: true,
+            scx_sched: "bpfland".into(),
+            scx_sched_props: "gaming".into(),
+            vcache_mode: "cache".into(),
+            start_script: Some("/opt/start.sh".into()),
+            stop_script: Some("/opt/stop.sh".into()),
+            idle_inhibit: true,
+            cpu_governor: "performance".into(),
+            scx_custom_flags: "--verbose".into(),
+            gamescope: None,
+            ..Default::default()
+        };
+        let toml_str = toml::to_string_pretty(&profile).unwrap();
+        std::fs::write(&src, &toml_str).unwrap();
+
+        // Export path
+        let export_dst = tmp.join("exported.toml");
+        std::fs::write(&export_dst, &toml_str).unwrap();
+
+        // Import back
+        let content = std::fs::read_to_string(&export_dst).unwrap();
+        let imported: GameProfile = toml::from_str(&content).unwrap();
+        assert_eq!(imported.name, "export_test");
+        assert_eq!(imported.scx_sched, "bpfland");
+        assert_eq!(imported.scx_sched_props, "gaming");
+        assert_eq!(imported.cpu_governor, "performance");
+        assert_eq!(imported.scx_custom_flags, "--verbose");
+        assert!(imported.idle_inhibit);
+        assert_eq!(imported.start_script.as_deref(), Some("/opt/start.sh"));
+        assert_eq!(imported.stop_script.as_deref(), Some("/opt/stop.sh"));
+    }
+
+    #[test]
+    fn crud_file_operations() {
+        let tmp = crate::tests::tempdir("crud_file");
+
+        // CREATE: write profile to temp dir
+        let profile = GameProfile {
+            name: "crud_game".into(),
+            performance_mode: true,
+            scx_sched: "lavd".into(),
+            scx_sched_props: "latency".into(),
+            vcache_mode: "freq".into(),
+            start_script: None,
+            stop_script: None,
+            idle_inhibit: false,
+            cpu_governor: "schedutil".into(),
+            scx_custom_flags: String::new(),
+            gamescope: None,
+            ..Default::default()
+        };
+        let path = tmp.join("crud_game.conf");
+        let content = toml::to_string_pretty(&profile).unwrap();
+        std::fs::write(&path, &content).unwrap();
+        assert!(path.exists());
+
+        // READ: load back
+        let loaded: GameProfile =
+            toml::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(loaded.name, "crud_game");
+        assert_eq!(loaded.scx_sched, "lavd");
+        assert_eq!(loaded.cpu_governor, "schedutil");
+
+        // UPDATE: modify and rewrite
+        let mut updated = loaded;
+        updated.scx_sched = "flash".into();
+        updated.cpu_governor = "performance".into();
+        updated.scx_custom_flags = "--slice-us=500".into();
+        let updated_content = toml::to_string_pretty(&updated).unwrap();
+        std::fs::write(&path, &updated_content).unwrap();
+
+        let reloaded: GameProfile =
+            toml::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(reloaded.scx_sched, "flash");
+        assert_eq!(reloaded.cpu_governor, "performance");
+        assert_eq!(reloaded.scx_custom_flags, "--slice-us=500");
+
+        // DELETE: remove file
+        std::fs::remove_file(&path).unwrap();
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn list_profiles_in_temp_dir() {
+        let tmp = crate::tests::tempdir("list_profiles");
+
+        // Create 3 profile files
+        for name in &["alpha", "beta", "gamma"] {
+            let p = GameProfile {
+                name: (*name).to_string(),
+                ..Default::default()
+            };
+            let path = tmp.join(format!("{name}.conf"));
+            std::fs::write(&path, toml::to_string_pretty(&p).unwrap()).unwrap();
+        }
+
+        // List .conf files in tmp dir
+        let mut names: Vec<String> = std::fs::read_dir(&tmp)
+            .unwrap()
+            .flatten()
+            .filter_map(|e| {
+                let p = e.path();
+                if p.extension().is_some_and(|x| x == "conf") {
+                    p.file_stem().map(|s| s.to_string_lossy().into_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        names.sort();
+        assert_eq!(names, vec!["alpha", "beta", "gamma"]);
+    }
+
+    #[test]
+    fn new_fields_default_empty() {
+        let content = "name = \"minimal\"\n";
+        let p: GameProfile = toml::from_str(content).unwrap();
+        assert_eq!(p.cpu_governor, "");
+        assert_eq!(p.scx_custom_flags, "");
+    }
+
+    #[test]
+    fn validate_empty_name() {
+        let p = GameProfile::default();
+        let w = super::validate(&p);
+        assert!(w.iter().any(|s| s.contains("name is required")));
+    }
+
+    #[test]
+    fn validate_path_traversal() {
+        let p = GameProfile {
+            name: "../etc/passwd".into(),
+            ..Default::default()
+        };
+        let w = super::validate(&p);
+        assert!(w.iter().any(|s| s.contains("invalid path")));
+    }
+
+    #[test]
+    fn validate_sched_mode_without_scheduler() {
+        let p = GameProfile {
+            name: "test".into(),
+            scx_sched: "none".into(),
+            scx_sched_props: "gaming".into(),
+            ..Default::default()
+        };
+        let w = super::validate(&p);
+        assert!(w.iter().any(|s| s.contains("no scheduler selected")));
+    }
+
+    #[test]
+    fn validate_custom_flags_without_scheduler() {
+        let p = GameProfile {
+            name: "test".into(),
+            scx_sched: "none".into(),
+            scx_custom_flags: "--verbose".into(),
+            ..Default::default()
+        };
+        let w = super::validate(&p);
+        assert!(w.iter().any(|s| s.contains("no scheduler selected")));
+    }
+
+    #[test]
+    fn validate_relative_script_path() {
+        let p = GameProfile {
+            name: "test".into(),
+            start_script: Some("relative/path.sh".into()),
+            ..Default::default()
+        };
+        let w = super::validate(&p);
+        assert!(w.iter().any(|s| s.contains("absolute path")));
+    }
+
+    #[test]
+    fn validate_valid_profile() {
+        let p = GameProfile {
+            name: "Cyberpunk2077.exe".into(),
+            performance_mode: true,
+            scx_sched: "bpfland".into(),
+            scx_sched_props: "gaming".into(),
+            vcache_mode: "none".into(),
+            start_script: Some("/opt/scripts/start.sh".into()),
+            stop_script: None,
+            idle_inhibit: true,
+            cpu_governor: "performance".into(),
+            scx_custom_flags: "--slice-us=800".into(),
+            gamescope: None,
+            ..Default::default()
+        };
+        let w = super::validate(&p);
+        assert!(w.is_empty(), "expected no warnings, got: {w:?}");
+    }
+}

@@ -1,0 +1,1083 @@
+# Portuguese translations for PACKAGE package
+# Traduções em português brasileiro para o pacote PACKAGE.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bigame-mode 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-22 00:59-0300\n"
+"PO-Revision-Date: 2026-04-20 00:27-0300\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: crates/bigame-ui/src/views/dashboard.rs:32
+#: crates/bigame-ui/src/views/profiles.rs:454
+msgid "Performance"
+msgstr "Desempenho"
+
+#: crates/bigame-ui/src/views/dashboard.rs:38
+msgid "Power Profile"
+msgstr "Perfil de Energia"
+
+#: crates/bigame-ui/src/views/dashboard.rs:39
+msgid "Checking…"
+msgstr "Verificando…"
+
+#: crates/bigame-ui/src/views/dashboard.rs:50
+msgid "Frame Generation (lsfg-vk)"
+msgstr "Geração de Quadros (lsfg-vk)"
+
+#: crates/bigame-ui/src/views/dashboard.rs:51
+msgid "Vulkan implicit layer · No Steam launch options needed"
+msgstr "Camada Vulkan implícita · Sem opções de inicialização Steam necessárias"
+
+#: crates/bigame-ui/src/views/dashboard.rs:54
+msgid "Ready"
+msgstr "Pronto"
+
+#: crates/bigame-ui/src/views/dashboard.rs:54
+msgid "Not installed"
+msgstr "Não instalado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:64
+msgid "Falcond Daemon"
+msgstr "Daemon Falcond"
+
+#: crates/bigame-ui/src/views/dashboard.rs:67
+msgid "Active Profile"
+msgstr "Perfil Ativo"
+
+#: crates/bigame-ui/src/views/dashboard.rs:72
+#: crates/bigame-ui/src/views/dashboard.rs:274
+msgid "Stopped"
+msgstr "Parado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:80
+msgid "SCX Scheduler"
+msgstr "Escalonador SCX"
+
+#: crates/bigame-ui/src/views/dashboard.rs:86
+#: crates/bigame-ui/src/views/profiles.rs:351
+#: crates/bigame-ui/src/views/tuning.rs:217
+msgid "VCache Mode"
+msgstr "Modo VCache"
+
+#: crates/bigame-ui/src/views/dashboard.rs:94
+msgid "System Telemetry"
+msgstr "Telemetria do Sistema"
+
+#: crates/bigame-ui/src/views/dashboard.rs:96
+msgid "CPU Frequency"
+msgstr "Frequência da CPU"
+
+#: crates/bigame-ui/src/views/dashboard.rs:97
+msgid "GPU Frequency"
+msgstr "Frequência da GPU"
+
+#: crates/bigame-ui/src/views/dashboard.rs:98
+msgid "GPU Temperature"
+msgstr "Temperatura da GPU"
+
+#: crates/bigame-ui/src/views/dashboard.rs:99
+msgid "Disk I/O"
+msgstr "E/S de Disco"
+
+#: crates/bigame-ui/src/views/dashboard.rs:100
+msgid "Network Latency"
+msgstr "Latência de Rede"
+
+#: crates/bigame-ui/src/views/dashboard.rs:101
+msgid "RAM Usage"
+msgstr "Uso de RAM"
+
+#: crates/bigame-ui/src/views/dashboard.rs:113
+msgid "Detected Games"
+msgstr "Jogos Detectados"
+
+#: crates/bigame-ui/src/views/dashboard.rs:117
+msgid "No games detected"
+msgstr "Nenhum jogo detectado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:118
+msgid "Install games via Steam, Lutris, or Heroic"
+msgstr "Instale jogos via Steam, Lutris ou Heroic"
+
+#: crates/bigame-ui/src/views/dashboard.rs:135
+msgid "Profile exists"
+msgstr "Perfil existe"
+
+#: crates/bigame-ui/src/views/dashboard.rs:142
+msgid "Create Profile"
+msgstr "Criar Perfil"
+
+#: crates/bigame-ui/src/views/dashboard.rs:155
+msgid "Profile created"
+msgstr "Perfil criado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:166
+msgid "Launch with Gamescope"
+msgstr "Iniciar com Gamescope"
+
+#: crates/bigame-ui/src/views/dashboard.rs:182
+msgid "Launching with Gamescope…"
+msgstr "Iniciando com Gamescope…"
+
+#: crates/bigame-ui/src/views/dashboard.rs:263
+msgid "Running"
+msgstr "Em execução"
+
+#: crates/bigame-ui/src/views/dashboard.rs:277
+msgid "Daemon not running"
+msgstr "Daemon não está em execução"
+
+#: crates/bigame-ui/src/views/dashboard.rs:423
+msgid "Game Launched"
+msgstr "Jogo Iniciado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:424
+#, c-format
+msgid "Falcond profile active: %s"
+msgstr "Perfil falcond ativo: %s"
+
+#: crates/bigame-ui/src/views/dashboard.rs:428
+msgid "Game Exited"
+msgstr "Jogo Encerrado"
+
+#: crates/bigame-ui/src/views/dashboard.rs:429
+msgid "Falcond returned to idle"
+msgstr "Falcond voltou ao modo inativo"
+
+#: crates/bigame-ui/src/views/dashboard.rs:443
+msgid "Unavailable"
+msgstr "Indisponível"
+
+#: crates/bigame-ui/src/views/dashboard.rs:591
+msgid "CPU"
+msgstr "CPU"
+
+#: crates/bigame-ui/src/views/dashboard.rs:592
+msgid "GPU Temp"
+msgstr "Temp. GPU"
+
+#: crates/bigame-ui/src/views/dashboard.rs:593
+msgid "RAM"
+msgstr "RAM"
+
+#: crates/bigame-ui/src/views/gamescope.rs:32
+msgid "Display"
+msgstr "Tela"
+
+#: crates/bigame-ui/src/views/gamescope.rs:39
+#: crates/bigame-ui/src/views/profiles.rs:394
+#: crates/bigame-ui/src/views/tuning.rs:295
+msgid "Width"
+msgstr "Largura"
+
+#: crates/bigame-ui/src/views/gamescope.rs:40
+msgid "Output resolution width"
+msgstr "Largura da resolução de saída"
+
+#: crates/bigame-ui/src/views/gamescope.rs:48
+#: crates/bigame-ui/src/views/profiles.rs:402
+#: crates/bigame-ui/src/views/tuning.rs:303
+msgid "Height"
+msgstr "Altura"
+
+#: crates/bigame-ui/src/views/gamescope.rs:49
+msgid "Output resolution height"
+msgstr "Altura da resolução de saída"
+
+#: crates/bigame-ui/src/views/gamescope.rs:57
+#: crates/bigame-ui/src/views/profiles.rs:417
+#: crates/bigame-ui/src/views/tuning.rs:311
+msgid "Framerate Limit"
+msgstr "Limite de FPS"
+
+#: crates/bigame-ui/src/views/gamescope.rs:58
+#: crates/bigame-ui/src/views/tuning.rs:312
+msgid "0 = unlimited"
+msgstr "0 = ilimitado"
+
+#: crates/bigame-ui/src/views/gamescope.rs:64
+msgid "Upscaling"
+msgstr "Upscaling"
+
+#: crates/bigame-ui/src/views/gamescope.rs:67
+#: crates/bigame-ui/src/views/tuning.rs:317
+msgid "FSR (FidelityFX)"
+msgstr "FSR (FidelityFX)"
+
+#: crates/bigame-ui/src/views/gamescope.rs:68
+#: crates/bigame-ui/src/views/tuning.rs:318
+msgid "AMD upscaling for lower render resolution"
+msgstr "Upscaling AMD para resolução de renderização menor"
+
+#: crates/bigame-ui/src/views/gamescope.rs:77
+#: crates/bigame-ui/src/views/tuning.rs:328
+msgid "FSR Sharpness"
+msgstr "Nitidez FSR"
+
+#: crates/bigame-ui/src/views/gamescope.rs:78
+#: crates/bigame-ui/src/views/tuning.rs:329
+msgid "0 = sharpest, 20 = softest"
+msgstr "0 = mais nítido, 20 = mais suave"
+
+#: crates/bigame-ui/src/views/gamescope.rs:90
+msgid "Overlay"
+msgstr "Sobreposição"
+
+#: crates/bigame-ui/src/views/gamescope.rs:93
+#: crates/bigame-ui/src/views/tuning.rs:335
+msgid "MangoHud"
+msgstr "MangoHud"
+
+#: crates/bigame-ui/src/views/gamescope.rs:94
+#: crates/bigame-ui/src/views/tuning.rs:336
+msgid "Performance overlay (MangoApp mode)"
+msgstr "Sobreposição de desempenho (modo MangoApp)"
+
+#: crates/bigame-ui/src/views/gamescope.rs:119
+msgid "Launch"
+msgstr "Iniciar"
+
+#: crates/bigame-ui/src/views/gamescope.rs:122
+msgid "Command"
+msgstr "Comando"
+
+#: crates/bigame-ui/src/views/gamescope.rs:128
+#: crates/bigame-ui/src/views/gamescope.rs:175
+msgid "Launch Gamescope"
+msgstr "Iniciar Gamescope"
+
+#: crates/bigame-ui/src/views/gamescope.rs:159
+msgid "Launching…"
+msgstr "Iniciando…"
+
+#: crates/bigame-ui/src/views/gamescope.rs:160
+msgid "Gamescope launched"
+msgstr "Gamescope iniciado"
+
+#: crates/bigame-ui/src/views/logs.rs:23
+msgid "Falcond Status"
+msgstr "Status do Falcond"
+
+#: crates/bigame-ui/src/views/logs.rs:24
+msgid "Live status from /tmp/falcond_status"
+msgstr "Status em tempo real de /tmp/falcond_status"
+
+#: crates/bigame-ui/src/views/logs.rs:34
+msgid "Gaming Services Journal"
+msgstr "Journal de Serviços de Jogos"
+
+#: crates/bigame-ui/src/views/logs.rs:35
+msgid "Logs from falcond and related gaming services"
+msgstr "Registros do falcond e serviços de jogos relacionados"
+
+#: crates/bigame-ui/src/views/logs.rs:39
+msgid "Refresh"
+msgstr "Atualizar"
+
+#: crates/bigame-ui/src/views/logs.rs:52
+msgid "Kernel &amp; GPU Messages"
+msgstr "Mensagens do Kernel &amp; GPU"
+
+#: crates/bigame-ui/src/views/logs.rs:53
+msgid "Recent dmesg entries related to GPU and gaming"
+msgstr "Entradas recentes do dmesg relacionadas à GPU e jogos"
+
+#: crates/bigame-ui/src/views/logs.rs:63
+msgid "Application Log"
+msgstr "Log da Aplicação"
+
+#: crates/bigame-ui/src/views/logs.rs:64
+msgid "BiGame-mode runtime events"
+msgstr "Eventos de execução do BiGame-mode"
+
+#: crates/bigame-ui/src/views/profiles.rs:33
+#: crates/bigame-ui/src/views/profiles.rs:143
+#: crates/bigame-ui/src/widgets/tutorial.rs:48
+msgid "Game Profiles"
+msgstr "Perfis de Jogos"
+
+#: crates/bigame-ui/src/views/profiles.rs:43
+#: crates/bigame-ui/src/views/profiles.rs:717
+msgid "New Profile"
+msgstr "Novo Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:48
+#: crates/bigame-ui/src/views/profiles.rs:80
+msgid "Import Profile"
+msgstr "Importar Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:99
+msgid "Profile imported"
+msgstr "Perfil importado"
+
+#: crates/bigame-ui/src/views/profiles.rs:106
+#, c-format
+msgid "Import failed: %s"
+msgstr "Falha ao importar: %s"
+
+#: crates/bigame-ui/src/views/profiles.rs:131
+msgid "Profile imported via drag-and-drop"
+msgstr "Perfil importado"
+
+#: crates/bigame-ui/src/views/profiles.rs:173
+msgid "Create with Wizard (guided)"
+msgstr "Criar com Assistente (guiado)"
+
+#: crates/bigame-ui/src/views/profiles.rs:180
+msgid ""
+"Perfect for beginners! Step-by-step guidance to set up the perfect profile."
+msgstr ""
+
+#: crates/bigame-ui/src/views/profiles.rs:209
+msgid "Game profile"
+msgstr "Perfil de jogo"
+
+#: crates/bigame-ui/src/views/profiles.rs:296
+msgid "Performance Settings"
+msgstr "Configurações de Desempenho"
+
+#: crates/bigame-ui/src/views/profiles.rs:299
+#: crates/bigame-ui/src/views/profiles.rs:465
+#: crates/bigame-ui/src/views/tuning.rs:69
+#: crates/bigame-ui/src/widgets/fg_controls.rs:129
+msgid "Performance Mode"
+msgstr "Modo de Desempenho"
+
+#: crates/bigame-ui/src/views/profiles.rs:300
+msgid "Enable system-wide optimizations"
+msgstr "Ativar otimizações em todo o sistema"
+
+#: crates/bigame-ui/src/views/profiles.rs:306
+msgid "Idle Inhibit"
+msgstr "Inibir Inatividade"
+
+#: crates/bigame-ui/src/views/profiles.rs:307
+msgid "Prevent screensaver while running"
+msgstr "Impedir proteção de tela durante a execução"
+
+#: crates/bigame-ui/src/views/profiles.rs:316
+#: crates/bigame-ui/src/views/tuning.rs:157
+msgid "CPU Governor"
+msgstr "Governor da CPU"
+
+#: crates/bigame-ui/src/views/profiles.rs:317
+msgid "Override CPU frequency governor"
+msgstr "Substituir governador de frequência da CPU"
+
+#: crates/bigame-ui/src/views/profiles.rs:327
+#: crates/bigame-ui/src/views/tuning.rs:116
+msgid "Scheduler"
+msgstr "Escalonador"
+
+#: crates/bigame-ui/src/views/profiles.rs:336
+msgid "Scheduler Mode"
+msgstr "Modo do Escalonador"
+
+#: crates/bigame-ui/src/views/profiles.rs:343
+msgid "Custom Scheduler Flags"
+msgstr "Flags Personalizadas do Escalonador"
+
+#: crates/bigame-ui/src/views/profiles.rs:346
+msgid "Extra CLI flags for the sched-ext scheduler (e.g. --slice-us=800)"
+msgstr "Flags CLI extras para o escalonador sched-ext (ex: --slice-us=800)"
+
+#: crates/bigame-ui/src/views/profiles.rs:360
+msgid "Scripts"
+msgstr "Scripts"
+
+#: crates/bigame-ui/src/views/profiles.rs:363
+msgid "Start Script"
+msgstr "Script de Início"
+
+#: crates/bigame-ui/src/views/profiles.rs:369
+msgid "Stop Script"
+msgstr "Script de Parada"
+
+#: crates/bigame-ui/src/views/profiles.rs:377
+#: crates/bigame-ui/src/views/tuning.rs:278
+#: crates/bigame-ui/src/views/tuning.rs:285
+#: crates/bigame-ui/src/widgets/tutorial.rs:73
+#: crates/bigame-ui/src/window.rs:65
+msgid "Gamescope"
+msgstr "Gamescope"
+
+#: crates/bigame-ui/src/views/profiles.rs:378
+msgid "Per-game overrides (leave disabled for global defaults)"
+msgstr "Substituições por jogo (desative para usar padrões globais)"
+
+#: crates/bigame-ui/src/views/profiles.rs:385
+msgid "Override Gamescope"
+msgstr "Substituir Gamescope"
+
+#: crates/bigame-ui/src/views/profiles.rs:407
+msgid "FSR"
+msgstr "FSR"
+
+#: crates/bigame-ui/src/views/profiles.rs:437
+#: crates/bigame-ui/src/widgets/fg_controls.rs:37
+msgid "Frame Generation (LSFG-VK)"
+msgstr "Geração de Quadros (LSFG-VK)"
+
+#: crates/bigame-ui/src/views/profiles.rs:443
+msgid "Multiplier (1-4x)"
+msgstr "Multiplicador (1-4x)"
+
+#: crates/bigame-ui/src/views/profiles.rs:450
+msgid "Flow Scale (%)"
+msgstr "Escala de Fluxo (%)"
+
+#: crates/bigame-ui/src/views/profiles.rs:455
+msgid "Balanced"
+msgstr "Balanceado"
+
+#: crates/bigame-ui/src/views/profiles.rs:456
+msgid "Quality"
+msgstr "Qualidade"
+
+#: crates/bigame-ui/src/views/profiles.rs:459
+msgid "OTF Quality"
+msgstr "Qualidade OTF"
+
+#: crates/bigame-ui/src/views/profiles.rs:536
+msgid "Profile"
+msgstr "Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:539
+msgid "Process Name"
+msgstr "Nome do Processo"
+
+#: crates/bigame-ui/src/views/profiles.rs:549
+#: crates/bigame-ui/src/views/profiles.rs:626
+msgid "Save Profile"
+msgstr "Salvar Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:619
+msgid "Saving…"
+msgstr "Salvando…"
+
+#: crates/bigame-ui/src/views/profiles.rs:623
+msgid "Profile saved"
+msgstr "Perfil salvo"
+
+#: crates/bigame-ui/src/views/profiles.rs:638
+#: crates/bigame-ui/src/views/profiles.rs:643
+msgid "Export Profile"
+msgstr "Exportar Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:653
+msgid "Profile exported"
+msgstr "Perfil exportado"
+
+#: crates/bigame-ui/src/views/profiles.rs:656
+#, c-format
+msgid "Export failed: %s"
+msgstr "Falha ao exportar: %s"
+
+#: crates/bigame-ui/src/views/profiles.rs:668
+msgid "Activate Profile"
+msgstr "Ativar Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:673
+msgid "Profile activated via GameMode"
+msgstr "Perfil ativado via GameMode"
+
+#: crates/bigame-ui/src/views/profiles.rs:679
+msgid "Delete Profile"
+msgstr "Excluir Perfil"
+
+#: crates/bigame-ui/src/views/profiles.rs:685
+msgid "Delete Profile?"
+msgstr "Excluir Perfil?"
+
+#: crates/bigame-ui/src/views/profiles.rs:686
+#, c-format
+msgid "Remove \"%s\" permanently?"
+msgstr "Remover \"%s\" permanentemente?"
+
+#: crates/bigame-ui/src/views/profiles.rs:688
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: crates/bigame-ui/src/views/profiles.rs:689
+msgid "Delete"
+msgstr "Excluir"
+
+#: crates/bigame-ui/src/views/profiles.rs:700
+msgid "Profile deleted"
+msgstr "Perfil excluído"
+
+#: crates/bigame-ui/src/views/profiles.rs:736
+msgid "No Profiles Found"
+msgstr "Nenhum Perfil Encontrado"
+
+#: crates/bigame-ui/src/views/profiles.rs:737
+msgid "Games detected by falcond will appear here"
+msgstr "Jogos detectados pelo falcond aparecerão aqui"
+
+#: crates/bigame-ui/src/views/settings.rs:17
+msgid "Appearance"
+msgstr "Aparência"
+
+#: crates/bigame-ui/src/views/settings.rs:20
+msgid "Dark Mode"
+msgstr "Modo Escuro"
+
+#: crates/bigame-ui/src/views/settings.rs:21
+msgid "Force dark color scheme"
+msgstr "Forçar esquema de cores escuro"
+
+#: crates/bigame-ui/src/views/settings.rs:47
+msgid "Notifications"
+msgstr "Notificações"
+
+#: crates/bigame-ui/src/views/settings.rs:50
+msgid "Game Notifications"
+msgstr "Notificações de Jogos"
+
+#: crates/bigame-ui/src/views/settings.rs:51
+msgid "Show notifications on game launch and exit"
+msgstr "Mostrar notificações ao iniciar e encerrar jogos"
+
+#: crates/bigame-ui/src/views/settings.rs:64
+msgid "Telemetry"
+msgstr "Telemetria do Sistema"
+
+#: crates/bigame-ui/src/views/settings.rs:67
+msgid "Ping Target"
+msgstr "Alvo do Ping"
+
+#: crates/bigame-ui/src/views/settings.rs:83
+msgid "About"
+msgstr "Sobre"
+
+#: crates/bigame-ui/src/views/settings.rs:98 crates/bigame-ui/src/window.rs:217
+msgid "About BiGame-mode"
+msgstr "Sobre o BiGame-mode"
+
+#: crates/bigame-ui/src/views/tuning.rs:64
+msgid "Daemon"
+msgstr "Daemon"
+
+#: crates/bigame-ui/src/views/tuning.rs:65
+msgid "falcond global behavior"
+msgstr "Comportamento global do falcond"
+
+#: crates/bigame-ui/src/views/tuning.rs:70
+msgid "Enable performance optimizations when games are detected"
+msgstr "Ativar otimizações de desempenho quando jogos são detectados"
+
+#: crates/bigame-ui/src/views/tuning.rs:91
+msgid "Poll Interval (ms)"
+msgstr "Intervalo de Verificação (ms)"
+
+#: crates/bigame-ui/src/views/tuning.rs:92
+msgid "How often falcond scans /proc for new processes"
+msgstr "Com que frequência o falcond verifica /proc por novos processos"
+
+#: crates/bigame-ui/src/views/tuning.rs:109
+msgid "Scheduler (sched-ext)"
+msgstr "Escalonador (sched-ext)"
+
+#: crates/bigame-ui/src/views/tuning.rs:110
+msgid "BPF-based process scheduler for gaming workloads"
+msgstr "Escalonador de processos BPF para cargas de jogos"
+
+#: crates/bigame-ui/src/views/tuning.rs:117
+msgid "Active sched-ext scheduler"
+msgstr "Escalonador sched-ext ativo"
+
+#: crates/bigame-ui/src/views/tuning.rs:125
+#: crates/bigame-ui/src/views/tuning.rs:251
+msgid "Mode"
+msgstr "Modo"
+
+#: crates/bigame-ui/src/views/tuning.rs:126
+msgid "Scheduler tuning preset"
+msgstr "Predefinição de ajuste do escalonador"
+
+#: crates/bigame-ui/src/views/tuning.rs:158
+msgid "Frequency scaling policy (managed by PowerProfiles)"
+msgstr "Política de escala de frequência (gerenciada por PowerProfiles)"
+
+#: crates/bigame-ui/src/views/tuning.rs:162
+msgid "Governor"
+msgstr "Governor"
+
+#: crates/bigame-ui/src/views/tuning.rs:163
+msgid "Applied to all CPU cores"
+msgstr "Aplicado a todos os núcleos da CPU"
+
+#: crates/bigame-ui/src/views/tuning.rs:207
+msgid "VCache (AMD 3D V-Cache)"
+msgstr "VCache (AMD 3D V-Cache)"
+
+#: crates/bigame-ui/src/views/tuning.rs:211
+msgid "Cache optimization strategy"
+msgstr "Estratégia de otimização de cache"
+
+#: crates/bigame-ui/src/views/tuning.rs:213
+msgid "Hardware not detected"
+msgstr "Hardware não detectado"
+
+#: crates/bigame-ui/src/views/tuning.rs:246
+msgid "Device Mode"
+msgstr "Modo do Dispositivo"
+
+#: crates/bigame-ui/src/views/tuning.rs:247
+msgid "Profile set matching your hardware form factor"
+msgstr "Conjunto de perfis para o formato do seu hardware"
+
+#: crates/bigame-ui/src/views/tuning.rs:252
+msgid "Selects profile directory for game matching"
+msgstr "Seleciona o diretório de perfis para detecção de jogos"
+
+#: crates/bigame-ui/src/views/tuning.rs:279
+msgid "Global default settings for Gamescope launches"
+msgstr "Configurações padrão globais para inicializações do Gamescope"
+
+#: crates/bigame-ui/src/views/tuning.rs:286
+msgid "Micro-compositor: FSR, resolution, framerate"
+msgstr "Micro-compositor: FSR, resolução, framerate"
+
+#: crates/bigame-ui/src/views/tuning.rs:386
+msgid "Reset to Defaults"
+msgstr "Redefinir padrões"
+
+#: crates/bigame-ui/src/widgets/booster_toggle.rs:18
+msgid "Booster Mode"
+msgstr "Modo Turbo"
+
+#: crates/bigame-ui/src/widgets/booster_toggle.rs:19
+msgid "Activate system-wide gaming optimizations"
+msgstr "Ativar otimizações de jogos em todo o sistema"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:38
+msgid "Configure real-time frame interpolation settings"
+msgstr "Configurar interpolação de quadros em tempo real"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:60
+msgid "Lossless.dll Path"
+msgstr "Caminho do Lossless.dll"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:75
+msgid "Multiplier"
+msgstr "Multiplicador"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:76
+msgid "Frames generated per real frame (1 = disabled)"
+msgstr "Quadros gerados por quadro real (1 = desativado)"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:101
+msgid "Flow Scale"
+msgstr "Escala de Fluxo"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:102
+msgid ""
+"Motion estimation resolution (25–100%). Lower = faster; higher = quality."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:130
+msgid "Lighter model — minor quality trade-off, better FPS"
+msgstr "Modelo mais leve — leve perda de qualidade, melhor FPS"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:137
+msgid "HDR"
+msgstr "HDR"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:138
+msgid "Enable HDR support for frame generation"
+msgstr "Ativar suporte HDR para geração de quadros"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:145
+msgid "Present Mode"
+msgstr "Modo de Apresentação"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:146
+msgid "Frame pacing and synchronization method"
+msgstr "Método de cadência e sincronização de quadros"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:148
+msgid "VSync / FIFO (Default, Recommended)"
+msgstr "VSync / FIFO (Padrão, Recomendado)"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:149
+msgid "Mailbox"
+msgstr "Caixa de Entrada (Mailbox)"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:150
+msgid "Immediate"
+msgstr "Imediato"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:209
+msgid "Select Lossless.dll"
+msgstr "Selecionar Lossless.dll"
+
+#: crates/bigame-ui/src/widgets/fg_controls.rs:218
+msgid "All files"
+msgstr "Todos os arquivos"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:23
+msgid "Got It"
+msgstr "Entendi"
+
+#. ── Content: header + view stack wrapped in toast overlay ────────
+#: crates/bigame-ui/src/widgets/tutorial.rs:34
+#: crates/bigame-ui/src/window.rs:44 crates/bigame-ui/src/window.rs:62
+msgid "Dashboard"
+msgstr "Painel"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:36
+msgid "<b>Stat Bar</b> — CPU frequency, GPU temperature and RAM at a glance."
+msgstr "<b>Barra de Estatísticas</b> — Frequência de CPU, temperatura da GPU e RAM de uma vez."
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:37
+msgid ""
+"<b>Performance Booster</b> — Enable or disable falcond for gaming "
+"optimisations."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:38
+msgid ""
+"<b>Frame Generation (lsfg-vk)</b> — Shows whether the Vulkan implicit layer "
+"is installed. No Steam launch options are needed — it activates "
+"automatically for configured games."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:39
+msgid ""
+"<b>Power Profile</b> — Current system power profile (Balanced / "
+"Performance / Power Saver)."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:40
+msgid ""
+"<b>Falcond Daemon</b> — Shows the active SCX scheduler, VCache mode and "
+"current game profile."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:41
+msgid ""
+"<b>System Telemetry</b> — Live sparkline graphs: CPU/GPU frequency, GPU "
+"temperature, disk I/O, network latency and RAM usage."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:42
+msgid ""
+"<b>Detected Games</b> — Games found via Steam, Lutris and Heroic. Create a "
+"performance profile or launch directly with Gamescope."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:50
+msgid ""
+"<b>Profile Wizard</b> — Guided setup with presets optimised for competitive "
+"FPS, strategy, simulation and more."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:51
+msgid ""
+"<b>Per-game Profiles</b> — Override global Tuning settings for a specific "
+"game executable."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:52
+msgid ""
+"<b>Auto-Apply</b> — Falcond detects the game process at launch and applies "
+"the matching profile automatically."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:53
+msgid ""
+"<b>New Profile (+)</b> — Create a blank profile and customise every "
+"parameter manually."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:54
+msgid ""
+"<b>Import</b> — Load a .conf or .toml profile from disk. Drag-and-drop onto "
+"the list also works."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:60
+#: crates/bigame-ui/src/window.rs:64
+msgid "Tuning"
+msgstr "Ajustes"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:62
+msgid ""
+"<b>Falcond Daemon</b> — Start or stop the daemon and toggle auto-start on "
+"login."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:63
+msgid ""
+"<b>SCX Scheduler</b> — sched-ext BPF CPU scheduler:\n"
+"  · bpfland — Low latency, ideal for competitive games\n"
+"  · lavd — Load-aware, good for mixed workloads\n"
+"  · rusty — General-purpose, stable default\n"
+"  · flash — Maximum throughput"
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:64
+msgid ""
+"<b>CPU Governor</b> — Performance keeps frequency at maximum; Powersave "
+"scales down to save energy."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:65
+msgid ""
+"<b>VCache Mode</b> — AMD Ryzen X3D only. Game Mode routes workloads to the "
+"VCache chiplet for lower memory latency."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:66
+msgid ""
+"<b>Frame Generation</b> — lsfg-vk Vulkan layer: inserts interpolated frames "
+"to boost perceived FPS."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:67
+msgid ""
+"<b>Device Mode</b> — Optimise kernel tuning for Gaming or Desktop workloads."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:75
+msgid ""
+"<b>Resolution</b> — Set the game render resolution independently from your "
+"desktop resolution."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:76
+msgid "<b>Framerate Limit</b> — Hard cap on FPS for consistent frame pacing."
+msgstr "<b>Limite de FPS</b> — Limite máximo de FPS para cadência de quadros consistente."
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:77
+msgid ""
+"<b>FSR</b> — FidelityFX Super Resolution upscaling. Sharpness: 0 = blurry · "
+"20 = sharpest."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:78
+msgid ""
+"<b>MangoHud</b> — Enable the MangoHud performance overlay inside the "
+"Gamescope window."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:79
+msgid ""
+"<b>Command</b> — Game or program to launch inside Gamescope (e.g. <tt>steam "
+"-gamepadui</tt>)."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:80
+msgid ""
+"<b>Launch</b> — Applies current settings and starts the Gamescope compositor."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:86
+#: crates/bigame-ui/src/window.rs:66
+msgid "Logs"
+msgstr "Registros"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:88
+msgid ""
+"<b>Falcond Status</b> — Live read of <tt>/tmp/falcond_status</tt>: current "
+"scheduler, governor and active profile."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:89
+msgid ""
+"<b>Gaming Services Journal</b> — journald entries from falcond and related "
+"gaming services."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:90
+msgid ""
+"<b>Kernel &amp; GPU Messages</b> — dmesg output filtered for GPU and gaming-"
+"related entries."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:91
+msgid ""
+"<b>Application Log</b> — BiGame-mode internal events: profile loads, D-Bus "
+"calls and errors."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:92
+msgid ""
+"<b>Auto-Refresh</b> — Logs update every 5 seconds. Click ↺ to force an "
+"immediate refresh."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:98
+#: crates/bigame-ui/src/window.rs:67
+msgid "Settings"
+msgstr "Configurações"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:100
+msgid ""
+"<b>Dark Mode</b> — Force dark colour scheme regardless of the system theme."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:101
+msgid ""
+"<b>Game Notifications</b> — Show desktop notifications when a game launches "
+"or exits."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:102
+msgid ""
+"<b>Ping Target</b> — Hostname or IP used by the Dashboard latency sparkline "
+"(default: 8.8.8.8)."
+msgstr ""
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:103
+msgid "<b>About</b> — App version, author and source code information."
+msgstr "<b>Sobre</b> — Versão do aplicativo, autor e informações do código-fonte."
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:109
+msgid "Help"
+msgstr "Ajuda"
+
+#: crates/bigame-ui/src/widgets/tutorial.rs:110
+msgid "No help available for this view."
+msgstr "Sem ajuda disponível para esta visualização."
+
+#: crates/bigame-ui/src/tray.rs:106
+msgid "Ready to play"
+msgstr "Pronto para jogar"
+
+#: crates/bigame-ui/src/tray.rs:107
+msgid "Gaming mode active"
+msgstr "Modo de jogos ativo"
+
+#: crates/bigame-ui/src/tray.rs:108
+msgid "Optimization warning"
+msgstr "Aviso de otimização"
+
+#: crates/bigame-ui/src/tray.rs:109
+msgid "Service error"
+msgstr "Erro de serviço"
+
+#: crates/bigame-ui/src/tray.rs:133
+msgid "Show Dashboard"
+msgstr "Mostrar Painel"
+
+#: crates/bigame-ui/src/tray.rs:160 crates/bigame-ui/src/window.rs:218
+#: crates/bigame-ui/src/window.rs:253
+msgid "Quit"
+msgstr "Sair"
+
+#: crates/bigame-ui/src/window.rs:63
+msgid "Profiles"
+msgstr "Perfis"
+
+#: crates/bigame-ui/src/window.rs:215
+msgid "Toggle Dark Mode"
+msgstr "Alternar Modo Escuro"
+
+#: crates/bigame-ui/src/window.rs:216 crates/bigame-ui/src/window.rs:258
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de Teclado"
+
+#: crates/bigame-ui/src/window.rs:224
+msgid "Main Menu"
+msgstr "Menu Principal"
+
+#: crates/bigame-ui/src/window.rs:229
+msgid "Help & Tutorial"
+msgstr "Ajuda e Tutorial"
+
+#: crates/bigame-ui/src/window.rs:263
+msgid "General"
+msgstr "Geral"
+
+#: crates/bigame-ui/src/window.rs:269
+msgid "Shortcuts"
+msgstr "Atalhos"
+
+#: crates/bigame-ui/src/app.rs:103
+msgid "Service Not Running or Crashed"
+msgstr "Serviço não está em execução ou travou"
+
+#: crates/bigame-ui/src/app.rs:104
+msgid ""
+"BiGameMode background daemon (falcond) is not running.\n"
+"This can happen if the configuration files got corrupted by an older version "
+"of the UI."
+msgstr ""
+
+#: crates/bigame-ui/src/app.rs:105
+msgid ""
+"Click 'Repair & Enable' to automatically reset corrupted configurations and "
+"start the service."
+msgstr ""
+
+#: crates/bigame-ui/src/app.rs:106
+msgid "Repair & Enable"
+msgstr "Reparar e Ativar"
+
+#: crates/bigame-ui/src/app.rs:145
+msgid "Performance tuning for Linux gaming"
+msgstr "Ajuste de desempenho para jogos no Linux"
+
+#: crates/bigame-ui/src/app.rs:150
+msgid "Developers"
+msgstr "Desenvolvedores"
+
+#: crates/bigame-ui/src/app.rs:151
+msgid "Special Thanks"
+msgstr "Agradecimentos Especiais"
+
+#~ msgid "GameMode"
+#~ msgstr "GameMode"
+
+#~ msgid "GameMode activated — performance mode enabled"
+#~ msgstr "GameMode ativado — modo de desempenho habilitado"
+
+#~ msgid "GameMode deactivated — returning to normal"
+#~ msgstr "GameMode desativado — retornando ao normal"
+
+#, c-format
+#~ msgid "%s game(s) active"
+#~ msgstr "%s jogo(s) ativo(s)"
+
+#~ msgid "Inactive"
+#~ msgstr "Inativo"
+
+#~ msgid "falcond Journal"
+#~ msgstr "Diário do falcond"
+
+#~ msgid "Recent log entries from the falcond daemon"
+#~ msgstr "Entradas recentes do diário do falcond"
+
+#~ msgid "Game profiles will appear here when detected by falcond"
+#~ msgstr "Perfis de jogos aparecerão aqui quando detectados pelo falcond"
+
+#~ msgid "Version"
+#~ msgstr "Versão"
+
+#~ msgid "Gaming performance control"
+#~ msgstr "Controle de desempenho para jogos"
+
+#~ msgid "Show"
+#~ msgstr "Mostrar"
+
+#~ msgid "FidelityFX Super Resolution"
+#~ msgstr "FidelityFX Super Resolution"
+
+#~ msgid "AMD FSR upscaling"
+#~ msgstr "Upscaling AMD FSR"
+
+#~ msgid "MangoHud Overlay"
+#~ msgstr "Sobreposição MangoHud"

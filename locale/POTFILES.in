@@ -1,0 +1,13 @@
+crates/bigame-ui/src/views/dashboard.rs
+crates/bigame-ui/src/views/gamescope.rs
+crates/bigame-ui/src/views/logs.rs
+crates/bigame-ui/src/views/profiles.rs
+crates/bigame-ui/src/views/settings.rs
+crates/bigame-ui/src/views/tuning.rs
+crates/bigame-ui/src/widgets/booster_toggle.rs
+crates/bigame-ui/src/widgets/fg_controls.rs
+crates/bigame-ui/src/widgets/tutorial.rs
+crates/bigame-ui/src/tray.rs
+crates/bigame-ui/src/window.rs
+crates/bigame-ui/src/app.rs
+data/com.biglinux.BiGameMode.desktop

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "https://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>BigLinux</vendor>
+  <vendor_url>https://www.biglinux.com.br</vendor_url>
+
+  <action id="com.biglinux.bigamemode.set-governor">
+    <description>Set CPU frequency governor</description>
+    <message>Authentication is required to change the CPU frequency governor</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="com.biglinux.bigamemode.set-scheduler">
+    <description>Change sched-ext BPF scheduler</description>
+    <message>Authentication is required to change the process scheduler</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="com.biglinux.bigamemode.set-vcache">
+    <description>Modify AMD VCache mode</description>
+    <message>Authentication is required to change VCache settings</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="com.biglinux.bigamemode.write-config">
+    <description>Write falcond daemon configuration</description>
+    <message>Authentication is required to modify system performance settings</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="com.biglinux.bigamemode.manage-profiles">
+    <description>Manage game profiles</description>
+    <message>Authentication is required to save or delete game profiles</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+</policyconfig>
