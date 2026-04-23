@@ -1,5 +1,14 @@
 # Rust build artifacts
+target/
 bigame-mode/target/
+bigame-engine/target/
+
+# makepkg working directories (cargo registry, pkg staging, extracted sources)
+src/
+pkg/
+pkgbuild/
+bigame-mode/src/
+bigame-mode/pkg/
 
 # Compiled locale files
 *.mo
