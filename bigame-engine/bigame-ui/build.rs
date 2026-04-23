@@ -13,27 +13,37 @@ fn main() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let output = format!("{out_dir}/resources.gresource");
 
-    // Copy style.css into data/ so glib-compile-resources can find it
+    // Stage extra assets in OUT_DIR (never mutate source tree)
+    let stage_dir = std::path::Path::new(&out_dir).join("gresource_stage");
+    std::fs::create_dir_all(&stage_dir).expect("create stage dir");
+
+    // Copy style.css into stage so glib-compile-resources can find it
     let css_src = style_dir.join("style.css");
-    let css_dst = data_dir.join("style.css");
     if css_src.exists() {
-        std::fs::copy(&css_src, &css_dst).expect("copy style.css");
+        std::fs::copy(&css_src, stage_dir.join("style.css")).expect("copy style.css");
     }
 
-    // Temporarily copy icons from usr/share/icons/ into data/
-    let icons_src = workspace.join("usr/share/icons");
-    let icons_dst = data_dir.join("icons");
-    if icons_src.exists() {
-        let _ = std::process::Command::new("cp")
-            .arg("-r")
-            .arg(&icons_src)
-            .arg(&data_dir)
+    // Copy icons into stage (source: data/icons/ if present, else usr/share/icons/)
+    let icons_in_data = data_dir.join("icons");
+    let icons_in_usr = workspace.join("usr/share/icons");
+    let icons_src = if icons_in_data.exists() {
+        Some(icons_in_data)
+    } else if icons_in_usr.exists() {
+        Some(icons_in_usr)
+    } else {
+        None
+    };
+    if let Some(src) = icons_src {
+        let _ = Command::new("cp")
+            .args(["-r", src.to_str().unwrap(), stage_dir.to_str().unwrap()])
             .status();
     }
 
     let status = Command::new("glib-compile-resources")
         .arg("--sourcedir")
         .arg(&data_dir)
+        .arg("--sourcedir")
+        .arg(&stage_dir)
         .arg("--target")
         .arg(&output)
         .arg(&gresource_xml)
@@ -42,17 +52,14 @@ fn main() {
 
     assert!(status.success(), "glib-compile-resources failed");
 
-    // Cleanup copied CSS and icons
-    let _ = std::fs::remove_file(&css_dst);
-    let _ = std::process::Command::new("rm")
-        .arg("-rf")
-        .arg(&icons_dst)
-        .status();
-
     println!("cargo::rerun-if-changed={}", gresource_xml.display());
     println!(
         "cargo::rerun-if-changed={}",
         style_dir.join("style.css").display()
+    );
+    println!(
+        "cargo::rerun-if-changed={}",
+        data_dir.join("icons/com.biglinux.BiGameMode.svg").display()
     );
     println!(
         "cargo::rerun-if-changed={}",
