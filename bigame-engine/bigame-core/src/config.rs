@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 /// Default falcond config file path.
-pub const CONFIG_PATH: &str = "/etc/falcond/config.conf";
+pub const CONFIG_PATH: &str = "/etc/falcond/falcond.conf";
 
 /// Falcond daemon configuration (mirrors Zig `Config` struct).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,15 +127,15 @@ fn parse_otter_conf(content: &str) -> FalcondConfig {
     cfg
 }
 
-/// Write falcond config via sudo (tee to config path).
+/// Write falcond config via DBus.
 ///
-/// Uses `sudo -n tee` to write as root, then sends `SIGHUP` to falcond
+/// Uses DBus to write as root, then sends `SIGHUP` to falcond
 /// so it reloads the config without restart.
 ///
 /// # Errors
-/// Returns error if serialization, pkexec, or SIGHUP fails.
-pub fn write(config: &FalcondConfig) -> Result<()> {
-    write_to(config, Path::new(CONFIG_PATH))
+/// Returns error if serialization or DBus fails.
+pub async fn write(config: &FalcondConfig) -> Result<()> {
+    write_to(config, Path::new(CONFIG_PATH)).await
 }
 
 /// Serialize config to otter_conf format (bare identifiers for enums, no TOML quoting).
@@ -168,55 +168,16 @@ fn serialize_otter_conf(config: &FalcondConfig) -> String {
     out
 }
 
-/// Write falcond config to a specific path via pkexec.
+/// Write falcond config via DBus.
 ///
 /// # Errors
-/// Returns error if serialization or pkexec fails.
-pub fn write_to(config: &FalcondConfig, path: &Path) -> Result<()> {
+/// Returns error if serialization or DBus fails.
+pub async fn write_to(config: &FalcondConfig, _path: &Path) -> Result<()> {
     let content = serialize_otter_conf(config);
 
-    // Ensure parent directory exists
-    if let Some(parent) = path.parent() {
-        let parent_str = parent.display().to_string();
-        let _ = std::process::Command::new("sudo")
-            .args(["-n", "/usr/bin/mkdir", "-p", &parent_str])
-            .status();
-    }
+    let proxy = crate::dbus_client::daemon_proxy().await?;
+    proxy.apply_falcond_config(&content).await?;
 
-    // sudo -n tee <path> — writes stdin to file as root, non-interactive
-    let mut child = std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/tee", &path.display().to_string()])
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .spawn()
-        .context("spawn sudo tee")?;
-
-    if let Some(ref mut stdin) = child.stdin {
-        use std::io::Write;
-        stdin
-            .write_all(content.as_bytes())
-            .context("write config to sudo stdin")?;
-    }
-
-    let exit = child.wait().context("wait sudo tee")?;
-    anyhow::ensure!(exit.success(), "sudo tee exited with {exit}");
-
-    // Signal falcond to reload (SIGHUP)
-    reload_falcond().ok(); // best-effort
-
-    Ok(())
-}
-
-/// Send `SIGHUP` to falcond daemon for config reload via sudo.
-///
-/// # Errors
-/// Returns error if sudo pkill fails.
-fn reload_falcond() -> Result<()> {
-    let status = std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/pkill", "-HUP", "falcond"])
-        .status()
-        .context("sudo pkill -HUP falcond")?;
-    anyhow::ensure!(status.success(), "sudo pkill -HUP falcond failed");
     Ok(())
 }
 

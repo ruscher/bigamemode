@@ -1,6 +1,6 @@
-use libadwaita as adw;
-use adw::prelude::*;
 use crate::i18n::i18n;
+use adw::prelude::*;
+use libadwaita as adw;
 
 /// A button that shows a prominent error indicator when something is wrong.
 pub struct ErrorIndicator {
@@ -41,7 +41,12 @@ impl ErrorIndicator {
 
             let dialog = adw::AlertDialog::builder()
                 .heading(title)
-                .body(format!("{}\n\n<b>{}</b>\n{}", msg, i18n("What to do:"), sol))
+                .body(format!(
+                    "{}\n\n<b>{}</b>\n{}",
+                    msg,
+                    i18n("What to do:"),
+                    sol
+                ))
                 .body_use_markup(true)
                 .close_response("close")
                 .default_response("close")
@@ -85,26 +90,50 @@ impl ErrorIndicator {
 
     #[allow(dead_code)]
     pub fn set_error(&self, title: &str, msg: &str, solution: &str) {
-        if let Ok(mut t) = self.error_title.lock() { *t = title.to_string(); }
-        if let Ok(mut m) = self.error_msg.lock() { *m = msg.to_string(); }
-        if let Ok(mut s) = self.solution.lock() { *s = solution.to_string(); }
-        if let Ok(mut a) = self.action.lock() { *a = None; }
+        if let Ok(mut t) = self.error_title.lock() {
+            *t = title.to_string();
+        }
+        if let Ok(mut m) = self.error_msg.lock() {
+            *m = msg.to_string();
+        }
+        if let Ok(mut s) = self.solution.lock() {
+            *s = solution.to_string();
+        }
+        if let Ok(mut a) = self.action.lock() {
+            *a = None;
+        }
         self.button.set_visible(true);
     }
 
     /// Set error with an action button that runs a command when clicked.
     /// `cmd` is split into program + args (e.g. `["sudo", "-n", "systemctl", "enable", "--now", "falcond"]`).
-    pub fn set_error_with_action(&self, title: &str, msg: &str, solution: &str,
-                                  action_label: &str, cmd: Vec<String>) {
-        if let Ok(mut t) = self.error_title.lock() { *t = title.to_string(); }
-        if let Ok(mut m) = self.error_msg.lock() { *m = msg.to_string(); }
-        if let Ok(mut s) = self.solution.lock() { *s = solution.to_string(); }
-        if let Ok(mut a) = self.action.lock() { *a = Some((action_label.to_string(), cmd)); }
+    pub fn set_error_with_action(
+        &self,
+        title: &str,
+        msg: &str,
+        solution: &str,
+        action_label: &str,
+        cmd: Vec<String>,
+    ) {
+        if let Ok(mut t) = self.error_title.lock() {
+            *t = title.to_string();
+        }
+        if let Ok(mut m) = self.error_msg.lock() {
+            *m = msg.to_string();
+        }
+        if let Ok(mut s) = self.solution.lock() {
+            *s = solution.to_string();
+        }
+        if let Ok(mut a) = self.action.lock() {
+            *a = Some((action_label.to_string(), cmd));
+        }
         self.button.set_visible(true);
     }
 
     pub fn clear(&self) {
         self.button.set_visible(false);
-        if let Ok(mut a) = self.action.lock() { *a = None; }
+        if let Ok(mut a) = self.action.lock() {
+            *a = None;
+        }
     }
 }

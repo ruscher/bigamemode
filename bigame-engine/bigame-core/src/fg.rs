@@ -78,7 +78,9 @@ struct LsfgConfig {
 }
 
 /// lsfg-vk config format version — MUST be 2.
-fn default_version() -> u32 { 2 }
+fn default_version() -> u32 {
+    2
+}
 
 // ── Path resolution ─────────────────────────────────────────────────────────
 
@@ -95,7 +97,10 @@ pub fn config_path() -> PathBuf {
 fn read_config() -> Result<LsfgConfig> {
     let path = config_path();
     if !path.exists() {
-        return Ok(LsfgConfig { version: 1, ..Default::default() });
+        return Ok(LsfgConfig {
+            version: 1,
+            ..Default::default()
+        });
     }
     let content = std::fs::read_to_string(&path)
         .with_context(|| format!("read lsfg-vk config: {}", path.display()))?;
@@ -134,7 +139,10 @@ pub fn write_profile(
 ) -> Result<()> {
     // lsfg-vk requires multiplier > 1; clamp to minimum 2.
     let multiplier = multiplier.max(2);
-    anyhow::ensure!((25..=100).contains(&flow_scale_pct), "flow_scale_pct must be 25–100");
+    anyhow::ensure!(
+        (25..=100).contains(&flow_scale_pct),
+        "flow_scale_pct must be 25–100"
+    );
 
     let mut cfg = read_config()?;
     cfg.version = 2;
@@ -144,7 +152,11 @@ pub fn write_profile(
     let flow_scale = flow_scale_pct as f32 / 100.0;
 
     // Update existing entry or push a new one.
-    if let Some(entry) = cfg.profiles.iter_mut().find(|p| p.active_in.contains(&name.to_owned())) {
+    if let Some(entry) = cfg
+        .profiles
+        .iter_mut()
+        .find(|p| p.active_in.contains(&name.to_owned()))
+    {
         entry.multiplier = multiplier;
         entry.flow_scale = flow_scale;
         entry.performance_mode = perf_mode;
@@ -177,7 +189,8 @@ pub fn write_profile(
 pub fn delete_profile(name: &str) -> Result<()> {
     let mut cfg = read_config()?;
     let before = cfg.profiles.len();
-    cfg.profiles.retain(|p| !p.active_in.contains(&name.to_owned()));
+    cfg.profiles
+        .retain(|p| !p.active_in.contains(&name.to_owned()));
     if cfg.profiles.len() != before {
         write_config(&cfg)?;
     }
@@ -193,7 +206,11 @@ pub fn read_profile(name: &str) -> (u32, u32, bool, bool, u32) {
     let Ok(cfg) = read_config() else {
         return (2, 100, false, false, 0);
     };
-    let Some(entry) = cfg.profiles.iter().find(|p| p.active_in.contains(&name.to_owned())) else {
+    let Some(entry) = cfg
+        .profiles
+        .iter()
+        .find(|p| p.active_in.contains(&name.to_owned()))
+    else {
         return (2, 100, false, false, 0);
     };
     // ensure multiplier is valid per lsfg-vk constraints
@@ -202,7 +219,13 @@ pub fn read_profile(name: &str) -> (u32, u32, bool, bool, u32) {
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let flow_scale_pct = ((entry.flow_scale * 100.0).round() as u32).clamp(25, 100);
 
-    (multiplier, flow_scale_pct, entry.performance_mode, entry.hdr, entry.present_mode)
+    (
+        multiplier,
+        flow_scale_pct,
+        entry.performance_mode,
+        entry.hdr,
+        entry.present_mode,
+    )
 }
 
 /// Read `[global].dll` from the lsfg-vk config.

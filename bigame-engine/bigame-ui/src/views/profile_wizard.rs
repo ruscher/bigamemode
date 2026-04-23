@@ -7,24 +7,24 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use libadwaita as adw;
 use adw::prelude::*;
+use libadwaita as adw;
 
-use bigame_core::profiles::GameProfile;
 use crate::i18n::i18n;
+use bigame_core::profiles::GameProfile;
 
 const STEPS: usize = 9;
 
 const STEP_IDS: &[&str; STEPS] = &[
-    "game",       // 1 – executable name
-    "perf",       // 2 – performance mode (turbo vs normal)
-    "cpu",        // 3 – CPU governor
-    "sched",      // 4 – sched-ext scheduler
-    "vcache",     // 5 – AMD VCache mode
-    "gamescope",  // 6 – Gamescope display layer
-    "fg",         // 7 – Frame Generation (LSFG-VK)
-    "idle",       // 8 – Idle inhibit (screen sleep)
-    "review",     // 9 – summary + save
+    "game",      // 1 – executable name
+    "perf",      // 2 – performance mode (turbo vs normal)
+    "cpu",       // 3 – CPU governor
+    "sched",     // 4 – sched-ext scheduler
+    "vcache",    // 5 – AMD VCache mode
+    "gamescope", // 6 – Gamescope display layer
+    "fg",        // 7 – Frame Generation (LSFG-VK)
+    "idle",      // 8 – Idle inhibit (screen sleep)
+    "review",    // 9 – summary + save
 ];
 
 /// Open the wizard dialog attached to `parent`.
@@ -154,7 +154,9 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
     let sched_model = gtk4::StringList::new(&sched_choices);
     let sched_combo = adw::ComboRow::builder()
         .title(i18n("Scheduler"))
-        .subtitle(i18n("Which scheduler to use (leave blank = system default)"))
+        .subtitle(i18n(
+            "Which scheduler to use (leave blank = system default)",
+        ))
         .model(&sched_model)
         .build();
     let modes = ["default", "gaming", "power", "latency"];
@@ -228,14 +230,20 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
         .subtitle(i18n("Wrap the game in a special display layer"))
         .build();
     let gs_width = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(1920.0, 640.0, 7680.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            1920.0, 640.0, 7680.0, 1.0, 10.0, 0.0,
+        )),
+        1.0,
+        0,
     );
     gs_width.set_title(&i18n("Width (pixels)"));
     gs_width.set_sensitive(false);
     let gs_height = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(1080.0, 480.0, 4320.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            1080.0, 480.0, 4320.0, 1.0, 10.0, 0.0,
+        )),
+        1.0,
+        0,
     );
     gs_height.set_title(&i18n("Height (pixels)"));
     gs_height.set_sensitive(false);
@@ -246,7 +254,8 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
         .build();
     let gs_fps = adw::SpinRow::new(
         Some(&gtk4::Adjustment::new(0.0, 0.0, 500.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        1.0,
+        0,
     );
     gs_fps.set_title(&i18n("Framerate Limit (0 = unlimited)"));
     gs_fps.set_sensitive(false);
@@ -365,7 +374,7 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
         .css_classes(["circular", "flat"])
         .visible(false)
         .build();
-    
+
     let next_btn = gtk4::Button::builder()
         .icon_name("go-next-symbolic")
         .css_classes(["suggested-action", "circular"])
@@ -424,7 +433,8 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
                             p.scx_sched = s.to_string();
                         }
                         let idx = mode_combo.selected() as usize;
-                        p.scx_sched_props = modes.get(idx).copied().unwrap_or("default").to_string();
+                        p.scx_sched_props =
+                            modes.get(idx).copied().unwrap_or("default").to_string();
                     }
                     4 => {
                         p.vcache_mode = if vcache_off.is_active() {
@@ -435,7 +445,8 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
                             "freq".into()
                         };
                     }
-                    5 => {
+                    5 =>
+                    {
                         #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
                         if gs_switch.is_active() {
                             p.gamescope = Some(bigame_core::gamescope::Config {
@@ -470,7 +481,7 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
             if next_step >= STEPS {
                 // ── Save ──────────────────────────────────────────────
                 let p = profile.borrow().clone();
-                
+
                 // Basic validation
                 if p.name.trim().is_empty() {
                     crate::widgets::toast::show(&next_btn, &i18n("Game name cannot be empty"));
@@ -480,34 +491,27 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
                 next_btn.set_sensitive(false);
                 next_btn.set_label(&i18n("Saving…"));
 
-                let (tx, rx) = std::sync::mpsc::channel();
                 let next_btn_ref = next_btn.clone();
                 let dialog_ref = dialog.clone();
                 let p_clone = p.clone();
                 let on_saved_final = on_saved_ref.clone();
-                
-                std::thread::spawn(move || {
-                    let res = bigame_core::profiles::save(&p);
-                    tx.send(res).ok();
-                });
 
-                gtk4::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                    if let Ok(res) = rx.try_recv() {
-                        match res {
-                            Ok(_) => {
-                                on_saved_final(p_clone.clone());
-                                dialog_ref.close();
-                            }
-                            Err(e) => {
-                                tracing::error!("Wizard save failed: {e}");
-                                crate::widgets::toast::show(&next_btn_ref, &i18n("Save failed. Did you cancel?"));
-                                next_btn_ref.set_sensitive(true);
-                                next_btn_ref.set_label(&i18n("Save Profile"));
-                            }
+                gtk4::glib::spawn_future_local(async move {
+                    match bigame_core::profiles::save(&p_clone).await {
+                        Ok(_) => {
+                            on_saved_final(p_clone.clone());
+                            dialog_ref.close();
                         }
-                        return gtk4::glib::ControlFlow::Break;
+                        Err(e) => {
+                            tracing::error!("Wizard save failed: {e}");
+                            crate::widgets::toast::show(
+                                &next_btn_ref,
+                                &i18n("Save failed. Did you cancel?"),
+                            );
+                            next_btn_ref.set_sensitive(true);
+                            next_btn_ref.set_label(&i18n("Save Profile"));
+                        }
                     }
-                    gtk4::glib::ControlFlow::Continue
                 });
                 return;
             }
@@ -602,8 +606,6 @@ fn wizard_step(
     title_lbl.add_css_class("title-2"); // Reduced from title-1
     title_lbl.add_css_class("wizard-step-title");
     vbox.append(&title_lbl);
-
-
 
     let desc_lbl = gtk4::Label::new(Some(description));
     desc_lbl.set_halign(gtk4::Align::Center);
@@ -731,7 +733,11 @@ fn populate_summary(container: &gtk4::Box, p: &GameProfile) {
         let fg_val = format!(
             "{}x ({})",
             p.fg_multiplier,
-            if p.fg_perf_mode { i18n("Perf") } else { i18n("Quality") }
+            if p.fg_perf_mode {
+                i18n("Perf")
+            } else {
+                i18n("Quality")
+            }
         );
         add_summary_row(&group, "", &i18n("Frame Gen"), &fg_val);
     }

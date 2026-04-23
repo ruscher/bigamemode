@@ -2,9 +2,9 @@
 //!
 //! Writes directly to `lsfg-vk` TOML.
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::gio;
+use libadwaita as adw;
 use std::cell::Cell;
 use std::rc::Rc;
 
@@ -14,7 +14,9 @@ use crate::i18n::i18n;
 pub fn build_tuning_fg_group(active_game: &str) -> adw::PreferencesGroup {
     let group = adw::PreferencesGroup::new();
     group.set_title(&i18n("Frame Generation (LSFG-VK)"));
-    group.set_description(Some(&i18n("Select a profile to tune Frame Generation settings in real-time.")));
+    group.set_description(Some(&i18n(
+        "Select a profile to tune Frame Generation settings in real-time.",
+    )));
 
     // ── DLL Path (global) ─────────────────────────────────────
     let init_dll = bigame_core::fg::read_global_dll().unwrap_or_default();
@@ -32,8 +34,10 @@ pub fn build_tuning_fg_group(active_game: &str) -> adw::PreferencesGroup {
 
     let info_btn = gtk4::Button::builder()
         .icon_name("dialog-information-symbolic")
-        .tooltip_text(i18n("Lossless Scaling is proprietary.
-Click to visit losslessscaling.com"))
+        .tooltip_text(i18n(
+            "Lossless Scaling is proprietary.
+Click to visit losslessscaling.com",
+        ))
         .valign(gtk4::Align::Center)
         .css_classes(["flat", "circular"])
         .build();
@@ -64,20 +68,26 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
 
     let row_clone = dll_row.clone();
     file_btn.connect_clicked(move |btn| {
-        let dialog = gtk4::FileDialog::builder().title(i18n("Select Lossless.dll")).modal(true).build();
+        let dialog = gtk4::FileDialog::builder()
+            .title(i18n("Select Lossless.dll"))
+            .modal(true)
+            .build();
         let dll_filter = gtk4::FileFilter::new();
         dll_filter.set_name(Some("DLL files (*.dll)"));
         dll_filter.add_pattern("*.dll");
         let filters = gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&dll_filter);
         dialog.set_filters(Some(&filters));
-        
+
         let r = row_clone.clone();
         if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
             dialog.open(Some(&win), gio::Cancellable::NONE, move |res| {
                 if let Ok(file) = res {
                     if let Some(path) = file.path() {
-                        r.set_text(&path.to_string_lossy()); let _ = bigame_core::fg::write_global_dll(Some(path.to_string_lossy().to_string()));
+                        r.set_text(&path.to_string_lossy());
+                        let _ = bigame_core::fg::write_global_dll(Some(
+                            path.to_string_lossy().to_string(),
+                        ));
                     }
                 }
             });
@@ -98,13 +108,13 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     if model_strings.is_empty() {
         model_strings.push("None");
     }
-    
+
     let target_model = gtk4::StringList::new(&model_strings);
     let target_row = adw::ComboRow::builder()
         .title(i18n("Target Profile"))
         .model(&target_model)
         .build();
-    
+
     // Auto-select active_game if it exists
     let mut selected_idx = 0;
     if !active_game.is_empty() {
@@ -116,7 +126,11 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     group.add(&target_row);
 
     let is_sensitive = !profiles.is_empty();
-    let initial_target = if profiles.is_empty() { "" } else { &profiles[selected_idx as usize] };
+    let initial_target = if profiles.is_empty() {
+        ""
+    } else {
+        &profiles[selected_idx as usize]
+    };
 
     let (init_mult, init_flow, init_perf, init_hdr, init_present) = if initial_target.is_empty() {
         (2, 100, false, false, 0)
@@ -142,7 +156,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         .width_request(200)
         .build();
 
-    scale.add_mark(1.0,  gtk4::PositionType::Bottom, Some("1x"));
+    scale.add_mark(1.0, gtk4::PositionType::Bottom, Some("1x"));
     scale.add_mark(10.0, gtk4::PositionType::Bottom, Some("10x"));
     scale.add_mark(20.0, gtk4::PositionType::Bottom, Some("20x"));
     multiplier_row.add_suffix(&scale);
@@ -151,7 +165,9 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     // ── Flow Scale Slider (25–100%) ───────────────────────────────────────
     let flow_row = adw::ActionRow::builder()
         .title(i18n("Flow Scale"))
-        .subtitle(i18n("Motion estimation resolution (25–100%). Lower = faster."))
+        .subtitle(i18n(
+            "Motion estimation resolution (25–100%). Lower = faster.",
+        ))
         .sensitive(is_sensitive)
         .build();
 
@@ -166,8 +182,8 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         .width_request(200)
         .build();
 
-    flow_scale.add_mark(25.0,  gtk4::PositionType::Bottom, Some("25%"));
-    flow_scale.add_mark(50.0,  gtk4::PositionType::Bottom, Some("50%"));
+    flow_scale.add_mark(25.0, gtk4::PositionType::Bottom, Some("25%"));
+    flow_scale.add_mark(50.0, gtk4::PositionType::Bottom, Some("50%"));
     flow_scale.add_mark(100.0, gtk4::PositionType::Bottom, Some("100%"));
     flow_row.add_suffix(&flow_scale);
     group.add(&flow_row);
@@ -206,7 +222,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     // ── Handlers ─────────────────────────────────────────────────────────
     if is_sensitive {
         let is_updating = Rc::new(Cell::new(false));
-        
+
         let tm_clone = target_model.clone();
         let scale_upd = scale.clone();
         let flow_upd = flow_scale.clone();
@@ -214,7 +230,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         let hdr_upd = hdr_row.clone();
         let pres_upd = present_row.clone();
         let is_upd = is_updating.clone();
-        
+
         target_row.connect_selected_notify(move |r| {
             if let Some(target) = tm_clone.string(r.selected()) {
                 let (m, f, p, h, pm) = bigame_core::fg::read_profile(&target);
@@ -240,7 +256,9 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         let save_fn = Rc::new({
             let debounce_task = Rc::new(Cell::new(None::<gtk4::glib::SourceId>));
             move || {
-                if is_upd_save.get() { return; }
+                if is_upd_save.get() {
+                    return;
+                }
                 if let Some(target) = tm_save.string(t_row.selected()) {
                     let name_str = target.to_string();
                     let mult = scale_ref.value() as u32;
@@ -258,18 +276,22 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
                     }
                     let dt = debounce_task.clone();
                     let dt_closure = dt.clone();
-                    dt.set(Some(gtk4::glib::timeout_add_local(std::time::Duration::from_millis(500), move || {
-                        if let Ok(mut profile) = bigame_core::profiles::load(&name_str) {
-                            profile.fg_multiplier = mult;
-                            profile.fg_flow_scale = flow;
-                            profile.fg_perf_mode = perf;
-                            profile.fg_hdr = hdr;
-                            profile.fg_present_mode = pres;
-                            let _ = bigame_core::profiles::save(&profile);
-                        }
-                        dt_closure.take();
-                        gtk4::glib::ControlFlow::Break
-                    })));
+                    dt.set(Some(gtk4::glib::timeout_add_local_once(
+                        std::time::Duration::from_millis(500),
+                        move || {
+                            gtk4::glib::spawn_future_local(async move {
+                                if let Ok(mut profile) = bigame_core::profiles::load(&name_str) {
+                                    profile.fg_multiplier = mult;
+                                    profile.fg_flow_scale = flow;
+                                    profile.fg_perf_mode = perf;
+                                    profile.fg_hdr = hdr;
+                                    profile.fg_present_mode = pres;
+                                    let _ = bigame_core::profiles::save(&profile).await;
+                                }
+                            });
+                            dt_closure.take();
+                        },
+                    )));
                 }
             }
         });

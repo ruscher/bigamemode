@@ -44,7 +44,10 @@ fn main() {
 
     // Cleanup copied CSS and icons
     let _ = std::fs::remove_file(&css_dst);
-    let _ = std::process::Command::new("rm").arg("-rf").arg(&icons_dst).status();
+    let _ = std::process::Command::new("rm")
+        .arg("-rf")
+        .arg(&icons_dst)
+        .status();
 
     println!("cargo::rerun-if-changed={}", gresource_xml.display());
     println!(
@@ -53,6 +56,8 @@ fn main() {
     );
     println!(
         "cargo::rerun-if-changed={}",
-        workspace.join("usr/share/icons/hicolor/scalable/apps/com.biglinux.BiGameMode.svg").display()
+        workspace
+            .join("usr/share/icons/hicolor/scalable/apps/com.biglinux.BiGameMode.svg")
+            .display()
     );
 }

@@ -3,7 +3,7 @@ use bigame_core::profiles::USER_PROFILES_DIR;
 use std::fs;
 use std::path::Path;
 use tokio::process::Command;
-use tracing::{info, error, Level};
+use tracing::{Level, error, info};
 use tracing_subscriber::FmtSubscriber;
 use zbus::{connection, interface};
 
@@ -13,9 +13,13 @@ struct BiGameDaemon;
 impl BiGameDaemon {
     /// Save profile JSON payload directly to /usr/share/falcond/profiles/user/
     /// The daemon parses, validates, and writes safely as root.
-    async fn save_profile(&self, name: String, json_payload: String) -> Result<(), zbus::fdo::Error> {
+    async fn save_profile(
+        &self,
+        name: String,
+        json_payload: String,
+    ) -> Result<(), zbus::fdo::Error> {
         info!("D-Bus Request: Save profile '{}'", name);
-        
+
         let target_dir = Path::new(USER_PROFILES_DIR);
         if !target_dir.exists() {
             if let Err(e) = fs::create_dir_all(target_dir) {
@@ -38,7 +42,7 @@ impl BiGameDaemon {
     async fn delete_profile(&self, name: String) -> Result<(), zbus::fdo::Error> {
         info!("D-Bus Request: Delete profile '{}'", name);
         let file_path = Path::new(USER_PROFILES_DIR).join(format!("{}.conf", name));
-        
+
         if file_path.exists() {
             if let Err(e) = fs::remove_file(&file_path) {
                 error!("Failed to delete profile {}: {}", name, e);
@@ -55,7 +59,7 @@ impl BiGameDaemon {
     async fn apply_falcond_config(&self, config_payload: String) -> Result<(), zbus::fdo::Error> {
         info!("D-Bus Request: Apply falcond global config");
         let conf_path = "/etc/falcond/falcond.conf";
-        
+
         if let Err(e) = fs::write(conf_path, config_payload) {
             error!("Failed to write {}: {}", conf_path, e);
             return Err(zbus::fdo::Error::Failed(format!("write config err: {}", e)));
@@ -82,7 +86,7 @@ impl BiGameDaemon {
     async fn set_vcache_mode(&self, mode: String) -> Result<(), zbus::fdo::Error> {
         info!("D-Bus Request: Set vcache mode to '{}'", mode);
         let sysfs_path = "/sys/bus/platform/drivers/amd_x3d_vcache/AMDI0015:00/amd_x3d_mode";
-        
+
         if Path::new(sysfs_path).exists() {
             if let Err(e) = fs::write(sysfs_path, mode) {
                 error!("Failed to write vcache sysfs: {}", e);
@@ -91,9 +95,49 @@ impl BiGameDaemon {
             info!("vcache sysfs successfully updated.");
         } else {
             error!("vcache sysfs path not found. Target not supported.");
-            return Err(zbus::fdo::Error::NotSupported("Hardware does not support dynamic x3d vcache".into()));
+            return Err(zbus::fdo::Error::NotSupported(
+                "Hardware does not support dynamic x3d vcache".into(),
+            ));
         }
 
+        Ok(())
+    }
+
+    /// Set CPU governor
+    async fn set_cpu_governor(&self, governor: String) -> Result<(), zbus::fdo::Error> {
+        info!("D-Bus Request: Set CPU governor to '{}'", governor);
+
+        if governor.is_empty() || !governor.chars().all(|c| c.is_alphanumeric() || c == '_') {
+            error!("Invalid governor name: {}", governor);
+            return Err(zbus::fdo::Error::InvalidArgs(format!(
+                "invalid governor name: {}",
+                governor
+            )));
+        }
+
+        let base = "/sys/devices/system/cpu";
+        let dir = match fs::read_dir(base) {
+            Ok(d) => d,
+            Err(e) => {
+                error!("Failed to read sysfs cpu directory: {}", e);
+                return Err(zbus::fdo::Error::Failed("read sysfs error".into()));
+            }
+        };
+
+        for entry in dir.flatten() {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if name.starts_with("cpu") && name[3..].chars().all(|c| c.is_ascii_digit()) {
+                let path = format!("{}/{}/cpufreq/scaling_governor", base, name);
+                if Path::new(&path).exists() {
+                    if let Err(e) = fs::write(&path, &governor) {
+                        error!("Failed to write to {}: {}", path, e);
+                    }
+                }
+            }
+        }
+
+        info!("CPU governor successfully updated.");
         Ok(())
     }
 
@@ -108,8 +152,7 @@ async fn main() -> Result<()> {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)
         .finish();
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     info!("Starting bigame-daemon (root orchestrator)...");
 

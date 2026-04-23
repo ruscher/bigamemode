@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 /// Falcond status file path (tmp, world-readable).
-pub const STATUS_PATH: &str = "/tmp/falcond_status";
+pub const STATUS_PATH: &str = "/run/falcond/status";
 
 /// Parsed falcond daemon status.
 #[derive(Debug, Clone, Default)]
@@ -95,7 +95,11 @@ pub fn parse(content: &str) -> FalcondStatus {
         status.loaded_profiles = v.parse().unwrap_or(0);
     }
     if let Some(&v) = kv.get(&("", "ACTIVE_PROFILE")) {
-        status.active_profile = if v == "None" { None } else { Some(v.to_owned()) };
+        status.active_profile = if v == "None" {
+            None
+        } else {
+            Some(v.to_owned())
+        };
     }
     if let Some(&v) = kv.get(&("CURRENT_STATUS", "Performance Mode")) {
         status.perf_mode_active = v == "Active";

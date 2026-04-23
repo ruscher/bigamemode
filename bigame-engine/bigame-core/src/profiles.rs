@@ -69,10 +69,18 @@ pub struct GameProfile {
     pub fg_present_mode: u32,
 }
 
-fn default_enabled() -> bool { true }
-fn default_fg_multiplier() -> u32 { 1 }
-fn default_fg_flow_scale() -> u32 { 100 }
-fn default_fg_quality() -> u32 { 1 }
+fn default_enabled() -> bool {
+    true
+}
+fn default_fg_multiplier() -> u32 {
+    1
+}
+fn default_fg_flow_scale() -> u32 {
+    100
+}
+fn default_fg_quality() -> u32 {
+    1
+}
 
 impl Default for GameProfile {
     fn default() -> Self {
@@ -175,10 +183,7 @@ pub fn critical_errors(profile: &GameProfile) -> Vec<String> {
 #[must_use]
 pub fn list_names() -> Vec<String> {
     let mut names = Vec::new();
-    for dir in [
-        Path::new(USER_PROFILES_DIR),
-        Path::new(SYSTEM_PROFILES_DIR),
-    ] {
+    for dir in [Path::new(USER_PROFILES_DIR), Path::new(SYSTEM_PROFILES_DIR)] {
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -275,7 +280,10 @@ fn serialize_profile_otter_conf(profile: &GameProfile) -> String {
     // name: always a quoted string
     out.push_str(&format!("name = \"{}\"\n", profile.name));
     // Booleans: bare
-    out.push_str(&format!("performance_mode = {}\n", profile.performance_mode));
+    out.push_str(&format!(
+        "performance_mode = {}\n",
+        profile.performance_mode
+    ));
     // Enums: bare identifiers (no quotes!)
     out.push_str(&format!("scx_sched = {}\n", profile.scx_sched));
     out.push_str(&format!("scx_sched_props = {}\n", profile.scx_sched_props));
@@ -296,7 +304,10 @@ fn serialize_profile_otter_conf(profile: &GameProfile) -> String {
         out.push_str(&format!("cpu_governor = \"{}\"\n", profile.cpu_governor));
     }
     // UI-only fields (otter_conf ignores unknown keys via skipValue)
-    out.push_str(&format!("scx_custom_flags = \"{}\"\n", profile.scx_custom_flags));
+    out.push_str(&format!(
+        "scx_custom_flags = \"{}\"\n",
+        profile.scx_custom_flags
+    ));
     out.push_str(&format!("enabled = {}\n", profile.enabled));
     out.push_str(&format!("fg_multiplier = {}\n", profile.fg_multiplier));
     out.push_str(&format!("fg_flow_scale = {}\n", profile.fg_flow_scale));
@@ -310,42 +321,15 @@ fn serialize_profile_otter_conf(profile: &GameProfile) -> String {
     out
 }
 
-/// Save a profile to the user directory via sudo.
+/// Save a profile to the user directory via DBus.
 ///
 /// # Errors
-/// Returns error if serialization or sudo write fails.
-pub fn save(profile: &GameProfile) -> Result<()> {
-    let path = user_path(&profile.name);
+/// Returns error if serialization or DBus call fails.
+pub async fn save(profile: &GameProfile) -> Result<()> {
     let content = serialize_profile_otter_conf(profile);
 
-    // Ensure directory exists via sudo. We wait for it to finish.
-    let mkdir_status = std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/mkdir", "-p", USER_PROFILES_DIR])
-        .status()
-        .context("spawn sudo mkdir")?;
-    
-    anyhow::ensure!(mkdir_status.success(), "Failed to create profiles directory");
-
-    let mut child = std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/tee", &path.display().to_string()])
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .spawn()
-        .context("spawn sudo tee (profile)")?;
-
-    if let Some(ref mut stdin) = child.stdin {
-        use std::io::Write;
-        stdin.write_all(content.as_bytes()).context("write profile")?;
-    }
-
-    let exit = child.wait().context("wait sudo tee")?;
-    anyhow::ensure!(exit.success(), "sudo tee profile failed: {exit}");
-
-    // Signal falcond to reload profiles
-    std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/pkill", "-HUP", "falcond"])
-        .status()
-        .ok();
+    let proxy = crate::dbus_client::daemon_proxy().await?;
+    proxy.save_profile(&profile.name, &content).await?;
 
     // Sync FG parameters to ~/.config/lsfg-vk/conf.toml.
     // lsfg-vk hot-reloads on mtime change — no process restart needed.
@@ -362,7 +346,7 @@ pub fn save(profile: &GameProfile) -> Result<()> {
     // Apply CPU governor immediately as a best-effort global effect.
     // Per-game scoping is handled by falcond's cpu_governor field at activation time.
     if !profile.cpu_governor.is_empty() {
-        if let Err(e) = crate::governor::set(&profile.cpu_governor) {
+        if let Err(e) = crate::governor::set(&profile.cpu_governor).await {
             tracing::warn!(
                 "failed to apply cpu_governor '{}' on profile save: {e:#}",
                 profile.cpu_governor
@@ -373,20 +357,18 @@ pub fn save(profile: &GameProfile) -> Result<()> {
     Ok(())
 }
 
-/// Delete a user profile by name via sudo rm.
+/// Delete a user profile by name via DBus.
 ///
 /// # Errors
-/// Returns error if the file doesn't exist or sudo fails.
-pub fn delete(name: &str) -> Result<()> {
+/// Returns error if the file doesn't exist or DBus fails.
+pub async fn delete(name: &str) -> Result<()> {
     let path = user_path(name);
     anyhow::ensure!(path.exists(), "profile not found: {}", path.display());
 
-    let status = std::process::Command::new("sudo")
-        .args(["-n", "/usr/bin/rm", &path.display().to_string()])
-        .status()
-        .context("sudo rm profile")?;
-    anyhow::ensure!(status.success(), "sudo rm failed: {status}");
+    let proxy = crate::dbus_client::daemon_proxy().await?;
+    proxy.delete_profile(name).await?;
 
+    // Signal falcond to reload profiles
     std::process::Command::new("sudo")
         .args(["-n", "/usr/bin/pkill", "-HUP", "falcond"])
         .status()
@@ -440,14 +422,14 @@ pub fn export(name: &str, dest: &Path) -> Result<()> {
 /// Import a profile from a local TOML file into the user profiles directory.
 ///
 /// # Errors
-/// Returns error if the file is unreadable, contains invalid TOML, or pkexec write fails.
-pub fn import(src: &Path) -> Result<String> {
+/// Returns error if the file is unreadable, contains invalid TOML, or DBus write fails.
+pub async fn import(src: &Path) -> Result<String> {
     let content =
         std::fs::read_to_string(src).with_context(|| format!("read import: {}", src.display()))?;
     let profile: GameProfile = toml::from_str(&content).context("parse imported profile TOML")?;
     anyhow::ensure!(!profile.name.is_empty(), "imported profile has no name");
     let name = profile.name.clone();
-    save(&profile)?;
+    save(&profile).await?;
     Ok(name)
 }
 
@@ -490,7 +472,10 @@ mod tests {
         assert!(parsed.performance_mode);
         assert_eq!(parsed.scx_sched, "bpfland");
         assert_eq!(parsed.vcache_mode, "cache");
-        assert_eq!(parsed.start_script.as_deref(), Some("/opt/scripts/start.sh"));
+        assert_eq!(
+            parsed.start_script.as_deref(),
+            Some("/opt/scripts/start.sh")
+        );
         assert!(parsed.stop_script.is_none());
         assert!(parsed.idle_inhibit);
     }
@@ -577,8 +562,7 @@ mod tests {
         assert!(path.exists());
 
         // READ: load back
-        let loaded: GameProfile =
-            toml::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let loaded: GameProfile = toml::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         assert_eq!(loaded.name, "crud_game");
         assert_eq!(loaded.scx_sched, "lavd");
         assert_eq!(loaded.cpu_governor, "schedutil");

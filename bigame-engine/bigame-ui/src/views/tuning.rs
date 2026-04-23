@@ -6,9 +6,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 
@@ -35,7 +35,9 @@ pub fn build() -> adw::PreferencesPage {
     let active_game = bigame_core::status::read()
         .and_then(|s| s.active_profile)
         .unwrap_or_default();
-    page.add(&crate::widgets::fg_controls::build_tuning_fg_group(&active_game));
+    page.add(&crate::widgets::fg_controls::build_tuning_fg_group(
+        &active_game,
+    ));
 
     page.add(&build_device_group(&shared));
 
@@ -45,8 +47,8 @@ pub fn build() -> adw::PreferencesPage {
 /// Write the shared config to disk via pkexec (background thread).
 fn save_config(shared: &SharedConfig) {
     let cfg = shared.borrow().clone();
-    gio::spawn_blocking(move || {
-        if let Err(e) = bigame_core::config::write(&cfg) {
+    glib::spawn_future_local(async move {
+        if let Err(e) = bigame_core::config::write(&cfg).await {
             tracing::error!("config write failed: {e}");
         }
     });
@@ -71,7 +73,9 @@ fn build_daemon_group(shared: &SharedConfig) -> adw::PreferencesGroup {
     // Performance mode toggle
     let perf_row = adw::SwitchRow::builder()
         .title(i18n("Performance Mode"))
-        .subtitle(i18n("Enable performance optimizations when games are detected"))
+        .subtitle(i18n(
+            "Enable performance optimizations when games are detected",
+        ))
         .active(shared.borrow().enable_performance_mode)
         .build();
     group.add(&perf_row);
@@ -117,7 +121,9 @@ fn build_scheduler_group(shared: &SharedConfig) -> adw::PreferencesGroup {
     let has_schedulers = detected.len() > 1;
 
     if has_schedulers {
-        group.set_description(Some(&i18n("BPF-based process scheduler for gaming workloads")));
+        group.set_description(Some(&i18n(
+            "BPF-based process scheduler for gaming workloads",
+        )));
     } else {
         group.set_description(Some(&i18n(
             "No sched-ext schedulers found. Install scx-scheds to enable this feature.\n\
@@ -134,7 +140,7 @@ fn build_scheduler_group(shared: &SharedConfig) -> adw::PreferencesGroup {
         .sensitive(has_schedulers)
         .build();
     sched_row.set_selected(find_index(&sched_model, &shared.borrow().scx_sched));
-    
+
     let info_btn = gtk4::Button::builder()
         .icon_name("dialog-information-symbolic")
         .valign(gtk4::Align::Center)
@@ -147,7 +153,7 @@ fn build_scheduler_group(shared: &SharedConfig) -> adw::PreferencesGroup {
         }
     });
     sched_row.add_suffix(&info_btn);
-    
+
     group.add(&sched_row);
 
     let mode_model = gtk4::StringList::new(&["default", "gaming", "power", "latency", "server"]);
@@ -186,7 +192,9 @@ fn build_scheduler_group(shared: &SharedConfig) -> adw::PreferencesGroup {
 fn build_governor_group() -> adw::PreferencesGroup {
     let group = adw::PreferencesGroup::new();
     group.set_title(&i18n("CPU Governor"));
-    group.set_description(Some(&i18n("Frequency scaling policy (managed by PowerProfiles)")));
+    group.set_description(Some(&i18n(
+        "Frequency scaling policy (managed by PowerProfiles)",
+    )));
 
     let gov_model = gtk4::StringList::new(&[]);
     let gov_row = adw::ComboRow::builder()
@@ -206,10 +214,9 @@ fn build_governor_group() -> adw::PreferencesGroup {
                 "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors",
             )
             .unwrap_or_default();
-            let curr = std::fs::read_to_string(
-                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
-            )
-            .unwrap_or_default();
+            let curr =
+                std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+                    .unwrap_or_default();
             (avail, curr)
         })
         .await
@@ -239,7 +246,9 @@ fn build_vcache_group(shared: &SharedConfig) -> adw::PreferencesGroup {
 
     let available = bigame_core::vcache::is_available();
     if available {
-        group.set_description(Some(&i18n("Cache optimization mode for AMD 3D V-Cache CPUs")));
+        group.set_description(Some(&i18n(
+            "Cache optimization mode for AMD 3D V-Cache CPUs",
+        )));
     } else {
         group.set_description(Some(&i18n(
             "Requires an AMD CPU with 3D V-Cache (e.g. Ryzen 7 5800X3D / 7800X3D). Not available on this system.",
@@ -271,13 +280,13 @@ fn build_vcache_group(shared: &SharedConfig) -> adw::PreferencesGroup {
     group
 }
 
-
-
 /// Device mode section (desktop / handheld / HTPC).
 fn build_device_group(shared: &SharedConfig) -> adw::PreferencesGroup {
     let group = adw::PreferencesGroup::new();
     group.set_title(&i18n("Device Mode"));
-    group.set_description(Some(&i18n("Profile set matching your hardware form factor")));
+    group.set_description(Some(&i18n(
+        "Profile set matching your hardware form factor",
+    )));
 
     let model = gtk4::StringList::new(&["none", "handheld", "htpc"]);
     let row = adw::ComboRow::builder()

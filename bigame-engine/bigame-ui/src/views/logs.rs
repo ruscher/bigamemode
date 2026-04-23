@@ -8,9 +8,9 @@
 
 use std::time::Duration;
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 
@@ -50,7 +50,9 @@ pub fn build() -> adw::PreferencesPage {
     // ── Section 3: Kernel / GPU Messages ────────────────────────────────────
     let kernel_group = adw::PreferencesGroup::new();
     kernel_group.set_title(&i18n("Kernel &amp; GPU Messages"));
-    kernel_group.set_description(Some(&i18n("Recent dmesg entries related to GPU and gaming")));
+    kernel_group.set_description(Some(&i18n(
+        "Recent dmesg entries related to GPU and gaming",
+    )));
 
     let kernel_text = build_log_textview();
     let kernel_scroll = build_scroll(250);
@@ -186,11 +188,33 @@ fn load_journal(text_view: &gtk4::TextView) {
             // Try multiple service names and approaches
             let sources = [
                 // systemd user unit
-                vec!["journalctl", "--user-unit=falcond", "--no-pager", "-n", "50", "--reverse"],
+                vec![
+                    "journalctl",
+                    "--user-unit=falcond",
+                    "--no-pager",
+                    "-n",
+                    "50",
+                    "--reverse",
+                ],
                 // systemd system unit
-                vec!["journalctl", "-u", "falcond", "--no-pager", "-n", "50", "--reverse"],
+                vec![
+                    "journalctl",
+                    "-u",
+                    "falcond",
+                    "--no-pager",
+                    "-n",
+                    "50",
+                    "--reverse",
+                ],
                 // Grep for falcond/bigame keywords in full journal
-                vec!["journalctl", "--no-pager", "-n", "100", "--reverse", "--grep=falcond|bigame|scx|lsfg"],
+                vec![
+                    "journalctl",
+                    "--no-pager",
+                    "-n",
+                    "100",
+                    "--reverse",
+                    "--grep=falcond|bigame|scx|lsfg",
+                ],
             ];
 
             let labels = [
@@ -298,7 +322,14 @@ fn load_app_log(text_view: &gtk4::TextView) {
 
             // Installed schedulers
             let scheds = bigame_core::sched::detect_installed();
-            log.push_str(&format!("Installed schedulers: {}\n", if scheds.is_empty() { "none".to_string() } else { scheds.join(", ") }));
+            log.push_str(&format!(
+                "Installed schedulers: {}\n",
+                if scheds.is_empty() {
+                    "none".to_string()
+                } else {
+                    scheds.join(", ")
+                }
+            ));
 
             // Profile count
             let profiles = bigame_core::profiles::list_names();
@@ -313,7 +344,9 @@ fn load_app_log(text_view: &gtk4::TextView) {
             log.push_str(&format!("AMD VCache support: {vcache}\n"));
 
             // CPU governor
-            if let Ok(gov) = std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor") {
+            if let Ok(gov) =
+                std::fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+            {
                 log.push_str(&format!("CPU governor: {}\n", gov.trim()));
             }
 
@@ -323,12 +356,22 @@ fn load_app_log(text_view: &gtk4::TextView) {
                 if let Some(active) = status.active_profile {
                     log.push_str(&format!("Active game profile: {active}\n"));
                     if !active.is_empty() && active != "None" {
-                        if let Ok(out) = std::process::Command::new("pgrep").arg("-f").arg(&active).output() {
+                        if let Ok(out) = std::process::Command::new("pgrep")
+                            .arg("-f")
+                            .arg(&active)
+                            .output()
+                        {
                             for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
                                 let map_path = format!("/proc/{}/maps", pid_str);
                                 // Previne hang se o kernel se perder no spinlock do kernel ao ler proc
                                 if let Ok(status) = std::process::Command::new("timeout")
-                                    .args(["0.2", "grep", "-qE", "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk", &map_path])
+                                    .args([
+                                        "0.2",
+                                        "grep",
+                                        "-qE",
+                                        "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk",
+                                        &map_path,
+                                    ])
                                     .status()
                                 {
                                     if status.success() {
@@ -344,9 +387,19 @@ fn load_app_log(text_view: &gtk4::TextView) {
             if lsfg_active {
                 log.push_str("Lossless Scaling (LSFG-VK): Active (Generating Frames)\n");
             } else {
-                let installed = std::path::Path::new("/usr/share/vulkan/implicit_layer.d/lsfg-vk.json").exists() 
-                             || std::path::Path::new("/etc/vulkan/implicit_layer.d/lsfg-vk.json").exists();
-                log.push_str(&format!("Lossless Scaling (LSFG-VK): {}\n", if installed { "Ready / Inactive" } else { "Not installed" }));
+                let installed =
+                    std::path::Path::new("/usr/share/vulkan/implicit_layer.d/lsfg-vk.json")
+                        .exists()
+                        || std::path::Path::new("/etc/vulkan/implicit_layer.d/lsfg-vk.json")
+                            .exists();
+                log.push_str(&format!(
+                    "Lossless Scaling (LSFG-VK): {}\n",
+                    if installed {
+                        "Ready / Inactive"
+                    } else {
+                        "Not installed"
+                    }
+                ));
             }
 
             log

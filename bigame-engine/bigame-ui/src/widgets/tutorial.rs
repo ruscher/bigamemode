@@ -1,7 +1,7 @@
 //! Context-aware tutorial dialogs explaining each view's purpose and options.
 
-use libadwaita as adw;
 use adw::prelude::*;
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 

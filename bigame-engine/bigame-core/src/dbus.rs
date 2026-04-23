@@ -48,7 +48,7 @@ trait GameMode {
 ///
 /// Caches the D-Bus session connection for reuse across calls.
 /// Returns 0 if `GameMode` daemon is unavailable.
-#[must_use] 
+#[must_use]
 pub fn gamemode_active_count() -> i32 {
     let Some(conn) = session_conn() else {
         return 0;
@@ -64,7 +64,6 @@ pub fn gamemode_active_count() -> i32 {
 pub fn falcond_is_running() -> bool {
     std::path::Path::new(crate::status::STATUS_PATH).exists()
 }
-
 
 /// Register the current process in `GameMode` for performance optimizations.
 ///
@@ -120,7 +119,7 @@ trait PowerProfiles {
 ///
 /// Returns "balanced", "performance", or "power-saver".
 /// Returns `None` if daemon is unavailable.
-#[must_use] 
+#[must_use]
 pub fn power_profile_get() -> Option<String> {
     let conn = system_conn()?;
     PowerProfilesProxyBlocking::new(conn)
@@ -131,7 +130,7 @@ pub fn power_profile_get() -> Option<String> {
 /// Set power profile (blocking).
 ///
 /// Valid values: "balanced", "performance", "power-saver".
-#[must_use] 
+#[must_use]
 pub fn power_profile_set(profile: &str) -> bool {
     let Some(conn) = system_conn() else {
         return false;
@@ -202,7 +201,9 @@ pub mod service {
                 .object_server()
                 .interface::<_, FalcondIface>(OBJECT_PATH)
                 .await;
-            let Ok(iface) = iface_ref else { continue; };
+            let Ok(iface) = iface_ref else {
+                continue;
+            };
             FalcondIface::status_changed(iface.signal_emitter(), &content)
                 .await
                 .ok();

@@ -1,16 +1,16 @@
 //! Main application window with `AdwNavigationSplitView` sidebar navigation.
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
-use std::sync::Arc;
-use std::rc::Rc;
+use libadwaita as adw;
 use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
 
-use crate::views;
-use crate::widgets;
 use crate::i18n::i18n;
 use crate::settings;
+use crate::views;
+use crate::widgets;
 
 /// Build the main application window.
 ///
@@ -19,7 +19,12 @@ use crate::settings;
 ///
 /// On narrow screens the split view collapses to show one pane at a time.
 #[allow(clippy::too_many_lines)]
-pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widgets::error_indicator::ErrorIndicator>) {
+pub fn build(
+    app: &adw::Application,
+) -> (
+    adw::ApplicationWindow,
+    Arc<crate::widgets::error_indicator::ErrorIndicator>,
+) {
     let error_indicator = Arc::new(crate::widgets::error_indicator::ErrorIndicator::new());
     // ── View stack (content driven by sidebar) ───────────────────────
     let view_stack = adw::ViewStack::new();
@@ -33,8 +38,6 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
     // Wrap in Rc<RefCell> so the Restore Defaults action can swap it without a rebuild
     let tuning_holder = Rc::new(RefCell::new(views::tuning::build()));
     view_stack.add_named(&*tuning_holder.borrow(), Some("tuning"));
-
-
 
     let logs = views::logs::build();
     view_stack.add_named(&logs, Some("logs"));
@@ -61,12 +64,11 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
 
     // ── Sidebar: nav list (icon + label rows) ─────────────────────────
     let nav_items = [
-        ("dashboard", i18n("Dashboard"),  "speedometer-symbolic"),
-        ("profiles",  i18n("Profiles"),   "applications-games-symbolic"),
-        ("tuning",    i18n("Tuning"),     "preferences-system-symbolic"),
-
-        ("logs",      i18n("Logs"),       "utilities-terminal-symbolic"),
-        ("settings",  i18n("Settings"),   "emblem-system-symbolic"),
+        ("dashboard", i18n("Dashboard"), "speedometer-symbolic"),
+        ("profiles", i18n("Profiles"), "applications-games-symbolic"),
+        ("tuning", i18n("Tuning"), "preferences-system-symbolic"),
+        ("logs", i18n("Logs"), "utilities-terminal-symbolic"),
+        ("settings", i18n("Settings"), "emblem-system-symbolic"),
     ];
 
     let sidebar_list = gtk4::ListBox::new();
@@ -184,8 +186,12 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
             if !win.is_maximized() {
                 let w = win.width();
                 let h = win.height();
-                if w > 0 { s.window_width = w; }
-                if h > 0 { s.window_height = h; }
+                if w > 0 {
+                    s.window_width = w;
+                }
+                if h > 0 {
+                    s.window_height = h;
+                }
             }
             settings::save(&s);
             glib::Propagation::Proceed
@@ -202,8 +208,15 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
     let theme_action = gio::SimpleAction::new_stateful("toggle-dark", None, &is_dark.to_variant());
     theme_action.connect_activate(|action, _| {
         let mgr = adw::StyleManager::default();
-        let dark = action.state().and_then(|v| v.get::<bool>()).unwrap_or(false);
-        let scheme = if dark { adw::ColorScheme::ForceLight } else { adw::ColorScheme::ForceDark };
+        let dark = action
+            .state()
+            .and_then(|v| v.get::<bool>())
+            .unwrap_or(false);
+        let scheme = if dark {
+            adw::ColorScheme::ForceLight
+        } else {
+            adw::ColorScheme::ForceDark
+        };
         mgr.set_color_scheme(scheme);
         action.set_state(&(!dark).to_variant());
     });
@@ -231,9 +244,9 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
             let th2 = Rc::clone(&th);
             dialog.connect_response(None, move |_, response| {
                 if response != "restore" { return; }
-                // Write default falcond config via sudo background thread
-                gio::spawn_blocking(|| {
-                    let _ = bigame_core::config::write(&bigame_core::config::FalcondConfig::default());
+                // Write default falcond config via dbus
+                glib::spawn_future_local(async move {
+                    let _ = bigame_core::config::write(&bigame_core::config::FalcondConfig::default()).await;
                 });
                 // Write default gamescope config (user-space)
                 let _ = bigame_core::gamescope::save_global(&bigame_core::gamescope::Config::default());
@@ -255,7 +268,10 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
     // ── Main menu button (content header, end) ────────────────────────
     let menu = adw::gio::Menu::new();
     menu.append(Some(&i18n("Toggle Dark Mode")), Some("win.toggle-dark"));
-    menu.append(Some(&i18n("Restore Defaults")), Some("win.restore-defaults"));
+    menu.append(
+        Some(&i18n("Restore Defaults")),
+        Some("win.restore-defaults"),
+    );
     menu.append(Some(&i18n("About BiGame-mode")), Some("app.about"));
     menu.append(Some(&i18n("Quit")), Some("app.quit"));
 
@@ -288,5 +304,3 @@ pub fn build(app: &adw::Application) -> (adw::ApplicationWindow, Arc<crate::widg
 
     (window, error_indicator)
 }
-
-

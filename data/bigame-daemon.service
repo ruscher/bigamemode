@@ -1,0 +1,14 @@
+[Unit]
+Description=BiGame-mode Engine Daemon (Root Orchestrator)
+After=dbus.service
+Requires=dbus.service
+
+[Service]
+Type=dbus
+BusName=com.biglinux.BiGameMode
+ExecStart=/usr/bin/bigame-daemon
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

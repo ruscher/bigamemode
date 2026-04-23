@@ -11,6 +11,7 @@ pub trait BiGameDaemon {
     async fn delete_profile(&self, name: &str) -> zbus::Result<()>;
     async fn apply_falcond_config(&self, config_payload: &str) -> zbus::Result<()>;
     async fn set_vcache_mode(&self, mode: &str) -> zbus::Result<()>;
+    async fn set_cpu_governor(&self, governor: &str) -> zbus::Result<()>;
     async fn ping(&self) -> zbus::Result<String>;
 }
 

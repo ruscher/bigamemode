@@ -199,10 +199,10 @@ fn detect_heroic(home: &Path, games: &mut Vec<DetectedGame>) {
 
     // store_cache: GOG, Epic (legendary), Amazon (nile), Zoom — parsed by title field
     for (file, source) in [
-        ("store_cache/gog_library.json",        "GOG (Heroic)"),
-        ("store_cache/legendary_library.json",   "Epic (Heroic)"),
-        ("store_cache/nile_library.json",        "Amazon (Heroic)"),
-        ("store_cache/zoom-library.json",        "Zoom (Heroic)"),
+        ("store_cache/gog_library.json", "GOG (Heroic)"),
+        ("store_cache/legendary_library.json", "Epic (Heroic)"),
+        ("store_cache/nile_library.json", "Amazon (Heroic)"),
+        ("store_cache/zoom-library.json", "Zoom (Heroic)"),
     ] {
         parse_heroic_json(&base.join(file), source, games);
     }
@@ -380,7 +380,8 @@ mod tests {
     fn lutris_yml_falls_back_to_slug_name() {
         // Real Lutris YAMLs often have no top-level name field
         let yml = "game:\n  exe: /home/user/Downloads/Jogo/Altered Beast Remake\nrunner: linux\n";
-        let game = parse_lutris_yml(yml, Some("Altered Beast Remake Linux".into())).expect("should parse");
+        let game =
+            parse_lutris_yml(yml, Some("Altered Beast Remake Linux".into())).expect("should parse");
         assert_eq!(game.name, "Altered Beast Remake Linux");
         assert_eq!(game.executable, "Altered Beast Remake");
     }
@@ -401,7 +402,10 @@ mod tests {
 
     #[test]
     fn slug_to_title_strips_numeric_id_and_humanizes() {
-        assert_eq!(slug_to_title("altered-beast-remake-linux-1771620880"), "Altered Beast Remake Linux");
+        assert_eq!(
+            slug_to_title("altered-beast-remake-linux-1771620880"),
+            "Altered Beast Remake Linux"
+        );
         assert_eq!(slug_to_title("supertuxkart-1771620561"), "Supertuxkart");
         assert_eq!(slug_to_title("no-number-here"), "No Number Here");
         assert_eq!(slug_to_title("single"), "Single");
@@ -440,7 +444,11 @@ mod tests {
     #[test]
     fn heroic_json_missing_file_no_panic() {
         let mut games = Vec::new();
-        parse_heroic_json(Path::new("/nonexistent/file.json"), "Epic (Heroic)", &mut games);
+        parse_heroic_json(
+            Path::new("/nonexistent/file.json"),
+            "Epic (Heroic)",
+            &mut games,
+        );
         assert!(games.is_empty());
     }
 

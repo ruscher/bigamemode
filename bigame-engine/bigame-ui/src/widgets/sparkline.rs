@@ -76,7 +76,13 @@ pub fn build() -> SparkHandle {
             widget
                 .style_context()
                 .lookup_color("accent_color")
-                .map_or((0.2, 0.6, 1.0), |rgba| (f64::from(rgba.red()), f64::from(rgba.green()), f64::from(rgba.blue())))
+                .map_or((0.2, 0.6, 1.0), |rgba| {
+                    (
+                        f64::from(rgba.red()),
+                        f64::from(rgba.green()),
+                        f64::from(rgba.blue()),
+                    )
+                })
         });
 
         let max = vals.iter().copied().fold(1.0_f64, f64::max);

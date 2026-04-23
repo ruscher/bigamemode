@@ -3,9 +3,9 @@
 //! When activated, switches `PowerProfiles` to "performance" via D-Bus.
 //! When deactivated, restores "balanced".
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 

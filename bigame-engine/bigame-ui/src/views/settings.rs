@@ -1,7 +1,7 @@
 //! Settings view: user preferences for appearance, notifications, and telemetry.
 
-use libadwaita as adw;
 use adw::prelude::*;
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 use crate::settings;
@@ -82,9 +82,8 @@ pub fn build() -> adw::PreferencesPage {
     let about = adw::PreferencesGroup::new();
     about.set_title(&i18n("About"));
 
-    let app_icon = gtk4::Image::from_resource(
-        "/com/biglinux/BiGameMode/icons/com.biglinux.BiGameMode.svg",
-    );
+    let app_icon =
+        gtk4::Image::from_resource("/com/biglinux/BiGameMode/icons/com.biglinux.BiGameMode.svg");
     app_icon.set_pixel_size(32);
     let version_row = adw::ActionRow::builder()
         .title("BiGame-mode")

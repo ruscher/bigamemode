@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.biglinux.BiGameMode
+Exec=/usr/bin/bigame-daemon
+User=root

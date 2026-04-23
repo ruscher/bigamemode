@@ -1,7 +1,7 @@
 //! Toast notification helpers.
 
-use libadwaita as adw;
 use adw::prelude::*;
+use libadwaita as adw;
 
 /// Find the nearest `AdwToastOverlay` ancestor of a widget.
 pub fn find_overlay(widget: &impl IsA<gtk4::Widget>) -> Option<adw::ToastOverlay> {

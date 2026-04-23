@@ -6,9 +6,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
+use libadwaita as adw;
 
 use bigame_core::profiles::GameProfile;
 
@@ -103,19 +103,21 @@ fn build_list_page(nav_view: &adw::NavigationView) -> adw::NavigationPage {
             dialog.open(win.as_ref(), gio::Cancellable::NONE, move |result| {
                 if let Ok(file) = result {
                     if let Some(path) = file.path() {
-                        match bigame_core::profiles::import(&path) {
-                            Ok(name) => {
-                                toast::show(&btn_ref, &i18n("Profile imported"));
-                                refresh_profile_list(&lb_ref, &nav_ref);
-                                nav_ref.push(&build_detail_page(&name));
+                        gtk4::glib::spawn_future_local(async move {
+                            match bigame_core::profiles::import(&path).await {
+                                Ok(name) => {
+                                    toast::show(&btn_ref, &i18n("Profile imported"));
+                                    refresh_profile_list(&lb_ref, &nav_ref);
+                                    nav_ref.push(&build_detail_page(&name));
+                                }
+                                Err(e) => {
+                                    toast::show(
+                                        &btn_ref,
+                                        &i18n("Import failed: %s").replace("%s", &e.to_string()),
+                                    );
+                                }
                             }
-                            Err(e) => {
-                                toast::show(
-                                    &btn_ref,
-                                    &i18n("Import failed: %s").replace("%s", &e.to_string()),
-                                );
-                            }
-                        }
+                        });
                     }
                 }
             });
@@ -132,18 +134,25 @@ fn build_list_page(nav_view: &adw::NavigationView) -> adw::NavigationPage {
             let Some(file) = value.get::<gio::File>().ok() else {
                 return false;
             };
-            let Some(path) = file.path() else { return false };
-            match bigame_core::profiles::import(&path) {
-                Ok(name) => {
-                    crate::views::profiles::refresh_profile_list(&list_box, &nav);
-                    if let Some(widget) = target.widget() {
-                        toast::show(&widget, &i18n("Profile imported via drag-and-drop"));
+            let Some(path) = file.path() else {
+                return false;
+            };
+            let list_box_ref = list_box.clone();
+            let nav_ref = nav.clone();
+            let target_ref = target.clone();
+            gtk4::glib::spawn_future_local(async move {
+                match bigame_core::profiles::import(&path).await {
+                    Ok(name) => {
+                        crate::views::profiles::refresh_profile_list(&list_box_ref, &nav_ref);
+                        if let Some(widget) = target_ref.widget() {
+                            toast::show(&widget, &i18n("Profile imported via drag-and-drop"));
+                        }
+                        nav_ref.push(&build_detail_page(&name));
                     }
-                    nav.push(&build_detail_page(&name));
-                    true
+                    Err(_) => {}
                 }
-                Err(_) => false,
-            }
+            });
+            true
         });
         page.add_controller(drop_target);
     }
@@ -186,7 +195,9 @@ fn build_wizard_card(list_box: &gtk4::ListBox, nav: &adw::NavigationView) -> gtk
         .css_classes(["dim-label", "caption"])
         .wrap(true)
         .build();
-    desc_label.set_markup(&i18n("Perfect for beginners! Step-by-step guidance to set up the perfect profile."));
+    desc_label.set_markup(&i18n(
+        "Perfect for beginners! Step-by-step guidance to set up the perfect profile.",
+    ));
 
     text_vbox.append(&title_label);
     text_vbox.append(&desc_label);
@@ -210,27 +221,31 @@ fn build_wizard_card(list_box: &gtk4::ListBox, nav: &adw::NavigationView) -> gtk
 }
 
 /// Build a single activatable profile list row.
-fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::ListBox) -> adw::ActionRow {
+fn make_profile_row(
+    name: &str,
+    nav: &adw::NavigationView,
+    list_box: &gtk4::ListBox,
+) -> adw::ActionRow {
     let profile = bigame_core::profiles::load(name).unwrap_or_default();
-    
+
     let row = adw::ActionRow::builder()
         .title(name)
         .subtitle(i18n("Game profile"))
         .activatable(true)
         .build();
-    
+
     let icon = gtk4::Image::from_icon_name("applications-games-symbolic");
     if !profile.enabled {
         icon.add_css_class("dim-label");
     }
     row.add_prefix(&icon);
-    
+
     // Enable/Disable toggle
     let toggle = gtk4::Switch::builder()
         .valign(gtk4::Align::Center)
         .active(profile.enabled)
         .build();
-    
+
     // Connect toggle to save
     {
         let name_str = name.to_owned();
@@ -238,28 +253,17 @@ fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::List
         toggle.connect_state_set(move |_sw, state| {
             let n = name_str.clone();
             let i = icon_ref.clone();
-            let (tx, rx) = std::sync::mpsc::channel();
-            
-            std::thread::spawn(move || {
+            glib::spawn_future_local(async move {
                 if let Ok(mut p) = bigame_core::profiles::load(&n) {
                     p.enabled = state;
-                    let res = bigame_core::profiles::save(&p);
-                    tx.send(res.is_ok()).ok();
-                }
-            });
-
-            glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                if let Ok(success) = rx.try_recv() {
-                    if success {
+                    if bigame_core::profiles::save(&p).await.is_ok() {
                         if state {
                             i.remove_css_class("dim-label");
                         } else {
                             i.add_css_class("dim-label");
                         }
                     }
-                    return glib::ControlFlow::Break;
                 }
-                glib::ControlFlow::Continue
             });
             glib::Propagation::Proceed
         });
@@ -272,7 +276,11 @@ fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::List
     let (tooltip, can_delete, icon) = match (is_user, is_system) {
         (true, true) => (i18n("Revert to System Default"), true, "edit-undo-symbolic"),
         (true, false) => (i18n("Delete Profile"), true, "user-trash-symbolic"),
-        (false, true) => (i18n("System profiles cannot be deleted. Edit to disable them."), false, "user-trash-symbolic"),
+        (false, true) => (
+            i18n("System profiles cannot be deleted. Edit to disable them."),
+            false,
+            "user-trash-symbolic",
+        ),
         (false, false) => (i18n("Unknown"), false, "user-trash-symbolic"), // Should not happen
     };
 
@@ -283,7 +291,7 @@ fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::List
         .tooltip_text(tooltip)
         .sensitive(can_delete)
         .build();
-    
+
     {
         let n = name.to_owned();
         let lb = list_box.clone();
@@ -307,20 +315,11 @@ fn make_profile_row(name: &str, nav: &adw::NavigationView, list_box: &gtk4::List
                 if response == "delete" {
                     let name_del = name_clone.clone();
                     toast::show(&btn_ref, &i18n("Profile deleted"));
-                    let (tx, rx) = std::sync::mpsc::channel();
-                    std::thread::spawn(move || {
-                        let _ = bigame_core::profiles::delete(&name_del);
-                        tx.send(()).ok();
-                    });
-                    
                     let lb_ref2 = lb_ref.clone();
                     let nav_clone2 = nav_clone.clone();
-                    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                        if rx.try_recv().is_ok() {
-                            crate::views::profiles::refresh_profile_list(&lb_ref2, &nav_clone2);
-                            return glib::ControlFlow::Break;
-                        }
-                        glib::ControlFlow::Continue
+                    glib::spawn_future_local(async move {
+                        let _ = bigame_core::profiles::delete(&name_del).await;
+                        crate::views::profiles::refresh_profile_list(&lb_ref2, &nav_clone2);
                     });
                 }
             });
@@ -385,7 +384,12 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
     perf.add(&idle_inhibit);
 
     let governor_model = gtk4::StringList::new(&[
-        "", "performance", "powersave", "ondemand", "conservative", "schedutil",
+        "",
+        "performance",
+        "powersave",
+        "ondemand",
+        "conservative",
+        "schedutil",
     ]);
     let governor_row = adw::ComboRow::builder()
         .title(i18n("CPU Governor"))
@@ -403,7 +407,7 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
         .model(&sched_model)
         .build();
     sched_row.set_selected(find_index(&sched_model, &profile.scx_sched));
-    
+
     let info_btn2 = gtk4::Button::builder()
         .icon_name("dialog-information-symbolic")
         .valign(gtk4::Align::Center)
@@ -419,8 +423,7 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
 
     perf.add(&sched_row);
 
-    let mode_model =
-        gtk4::StringList::new(&["default", "gaming", "power", "latency", "server"]);
+    let mode_model = gtk4::StringList::new(&["default", "gaming", "power", "latency", "server"]);
     let mode_row = adw::ComboRow::builder()
         .title(i18n("Scheduler Mode"))
         .model(&mode_model)
@@ -432,7 +435,9 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
         .title(i18n("Custom Scheduler Flags"))
         .text(&profile.scx_custom_flags)
         .build();
-    custom_flags_row.set_tooltip_text(Some(&i18n("Extra CLI flags for the sched-ext scheduler (e.g. --slice-us=800)")));
+    custom_flags_row.set_tooltip_text(Some(&i18n(
+        "Extra CLI flags for the sched-ext scheduler (e.g. --slice-us=800)",
+    )));
     perf.add(&custom_flags_row);
 
     let vcache_model = gtk4::StringList::new(&["none", "cache", "freq"]);
@@ -464,10 +469,14 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
     // Gamescope per-game overrides
     let gs_group = adw::PreferencesGroup::new();
     gs_group.set_title(&i18n("Gamescope"));
-    gs_group.set_description(Some(&i18n("Per-game overrides (leave disabled for global defaults)")));
+    gs_group.set_description(Some(&i18n(
+        "Per-game overrides (leave disabled for global defaults)",
+    )));
 
     // Pre-populate with the saved global defaults if no per-game override exists.
-    let gs_cfg = profile.gamescope.clone()
+    let gs_cfg = profile
+        .gamescope
+        .clone()
         .unwrap_or_else(bigame_core::gamescope::load_global);
 
     let gs_enable = adw::SwitchRow::builder()
@@ -477,16 +486,32 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
     gs_group.add(&gs_enable);
 
     let gs_width = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.width), 640.0, 7680.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            f64::from(gs_cfg.width),
+            640.0,
+            7680.0,
+            1.0,
+            10.0,
+            0.0,
+        )),
+        1.0,
+        0,
     );
     gs_width.set_title(&i18n("Width"));
     gs_width.set_sensitive(profile.gamescope.is_some());
     gs_group.add(&gs_width);
 
     let gs_height = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.height), 480.0, 4320.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            f64::from(gs_cfg.height),
+            480.0,
+            4320.0,
+            1.0,
+            10.0,
+            0.0,
+        )),
+        1.0,
+        0,
     );
     gs_height.set_title(&i18n("Height"));
     gs_height.set_sensitive(profile.gamescope.is_some());
@@ -500,8 +525,16 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
     gs_group.add(&gs_fsr);
 
     let gs_fps = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(f64::from(gs_cfg.framerate_limit), 0.0, 500.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            f64::from(gs_cfg.framerate_limit),
+            0.0,
+            500.0,
+            1.0,
+            10.0,
+            0.0,
+        )),
+        1.0,
+        0,
     );
     gs_fps.set_title(&i18n("Framerate Limit"));
     gs_fps.set_sensitive(profile.gamescope.is_some());
@@ -529,7 +562,7 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
         .title(i18n("Path to Lossless.dll"))
         .text(profile.fg_dll_path.as_deref().unwrap_or(""))
         .build();
-    
+
     let file_btn = gtk4::Button::builder()
         .icon_name("folder-open-symbolic")
         .valign(gtk4::Align::Center)
@@ -539,8 +572,10 @@ fn build_perf_widgets(page: &adw::PreferencesPage, profile: &GameProfile) -> Per
 
     let info_btn = gtk4::Button::builder()
         .icon_name("dialog-information-symbolic")
-        .tooltip_text(i18n("Lossless Scaling is proprietary.
-Click to visit losslessscaling.com"))
+        .tooltip_text(i18n(
+            "Lossless Scaling is proprietary.
+Click to visit losslessscaling.com",
+        ))
         .valign(gtk4::Align::Center)
         .css_classes(["flat", "circular"])
         .build();
@@ -571,14 +606,17 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
 
     let r_clone = fg_dll_path.clone();
     file_btn.connect_clicked(move |btn| {
-        let dialog = gtk4::FileDialog::builder().title(i18n("Select Lossless.dll")).modal(true).build();
+        let dialog = gtk4::FileDialog::builder()
+            .title(i18n("Select Lossless.dll"))
+            .modal(true)
+            .build();
         let f = gtk4::FileFilter::new();
         f.set_name(Some("DLL files (*.dll)"));
         f.add_pattern("*.dll");
         let filters = gio::ListStore::new::<gtk4::FileFilter>();
         filters.append(&f);
         dialog.set_filters(Some(&filters));
-        
+
         let r = r_clone.clone();
         if let Some(win) = btn.root().and_downcast::<gtk4::Window>() {
             dialog.open(Some(&win), gio::Cancellable::NONE, move |res| {
@@ -593,15 +631,31 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     fg_group.add(&fg_dll_path);
 
     let fg_multiplier = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(f64::from(profile.fg_multiplier).max(1.0).min(20.0), 1.0, 20.0, 1.0, 1.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            f64::from(profile.fg_multiplier).max(1.0).min(20.0),
+            1.0,
+            20.0,
+            1.0,
+            1.0,
+            0.0,
+        )),
+        1.0,
+        0,
     );
     fg_multiplier.set_title(&i18n("Multiplier (1-20x)"));
     fg_group.add(&fg_multiplier);
 
     let fg_flow_scale = adw::SpinRow::new(
-        Some(&gtk4::Adjustment::new(f64::from(profile.fg_flow_scale).max(25.0).min(100.0), 25.0, 100.0, 1.0, 10.0, 0.0)),
-        1.0, 0,
+        Some(&gtk4::Adjustment::new(
+            f64::from(profile.fg_flow_scale).max(25.0).min(100.0),
+            25.0,
+            100.0,
+            1.0,
+            10.0,
+            0.0,
+        )),
+        1.0,
+        0,
     );
     fg_flow_scale.set_title(&i18n("Flow Scale (25-100%)"));
     fg_group.add(&fg_flow_scale);
@@ -788,7 +842,8 @@ fn build_detail_page_for(profile: &GameProfile) -> adw::NavigationPage {
         // Advisory warnings (VCache on non-AMD, scheduler mismatch, etc.) —
         // show as toast but do NOT block saving.
         let warnings = bigame_core::profiles::validate(&profile_clone);
-        let soft: Vec<_> = warnings.iter()
+        let soft: Vec<_> = warnings
+            .iter()
             .filter(|w| !errors.contains(w))
             .cloned()
             .collect();
@@ -799,12 +854,13 @@ fn build_detail_page_for(profile: &GameProfile) -> adw::NavigationPage {
         btn.set_sensitive(false);
         btn.set_label(&i18n("Saving…"));
         let btn_ref = btn.clone();
-        gio::spawn_blocking(move || bigame_core::profiles::save(&profile_clone));
-        let btn_later = btn_ref.clone();
-        toast::show(btn, &i18n("Profile saved"));
-        glib::timeout_add_local_once(std::time::Duration::from_secs(2), move || {
-            btn_later.set_sensitive(true);
-            btn_later.set_label(&i18n("Save Profile"));
+        glib::spawn_future_local(async move {
+            let _ = bigame_core::profiles::save(&profile_clone).await;
+            toast::show(&btn_ref, &i18n("Profile saved"));
+            glib::timeout_add_local_once(std::time::Duration::from_secs(2), move || {
+                btn_ref.set_sensitive(true);
+                btn_ref.set_label(&i18n("Save Profile"));
+            });
         });
     });
 

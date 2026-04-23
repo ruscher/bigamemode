@@ -1,0 +1,47 @@
+#!/bin/bash
+
+echo "=== FalconD Diagnostic Script ==="
+echo
+
+echo "1. Status do serviço falcond:"
+systemctl status falcond.service --no-pager -l 2>/dev/null || echo "falcond.service não encontrado"
+echo
+
+echo "2. Status do serviço bigame-daemon:"
+systemctl status bigame-daemon.service --no-pager -l 2>/dev/null || echo "bigame-daemon.service não encontrado"
+echo
+
+echo "3. Processos relacionados:"
+ps aux | grep -E "falcond|bigame" | grep -v grep
+echo
+
+echo "4. Status do scx (sched_ext):"
+systemctl status scx.service --no-pager 2>/dev/null || echo "scx.service não encontrado"
+ls /usr/bin/scx_* 2>/dev/null || echo "Nenhum scheduler scx encontrado"
+echo
+
+echo "5. Diretórios e permissões:"
+ls -la /run/falcond 2>/dev/null || echo "/run/falcond não existe"
+ls -la /var/lib/falcond 2>/dev/null || echo "/var/lib/falcond não existe"
+ls -la /var/log/falcond 2>/dev/null || echo "/var/log/falcond não existe"
+ls -la /etc/falcond 2>/dev/null || echo "/etc/falcond não existe"
+echo
+
+echo "6. Configurações:"
+if [ -f /etc/falcond/falcond.conf ]; then
+    echo "--- /etc/falcond/falcond.conf ---"
+    cat /etc/falcond/falcond.conf
+else
+    echo "/etc/falcond/falcond.conf não encontrado"
+fi
+echo
+
+echo "7. Grupos do usuário atual:"
+groups
+echo
+
+echo "8. Logs recentes do falcond:"
+journalctl -u falcond.service -n 30 --no-pager 2>/dev/null || echo "Sem logs para falcond"
+echo
+
+echo "=== Fim do diagnóstico ==="

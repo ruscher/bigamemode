@@ -140,7 +140,10 @@ mod tests {
 
     #[test]
     fn cpu_snapshot_clone() {
-        let snap = CpuSnapshot { freq_mhz: 3600, governor: "performance".into() };
+        let snap = CpuSnapshot {
+            freq_mhz: 3600,
+            governor: "performance".into(),
+        };
         let cloned = snap.clone();
         assert_eq!(cloned.freq_mhz, 3600);
         assert_eq!(cloned.governor, "performance");
@@ -148,7 +151,10 @@ mod tests {
 
     #[test]
     fn gpu_snapshot_clone() {
-        let snap = GpuSnapshot { freq_mhz: Some(1800), temp_celsius: Some(72.5) };
+        let snap = GpuSnapshot {
+            freq_mhz: Some(1800),
+            temp_celsius: Some(72.5),
+        };
         let cloned = snap.clone();
         assert_eq!(cloned.freq_mhz, Some(1800));
         assert_eq!(cloned.temp_celsius, Some(72.5));
@@ -156,7 +162,10 @@ mod tests {
 
     #[test]
     fn gpu_snapshot_none_fields() {
-        let snap = GpuSnapshot { freq_mhz: None, temp_celsius: None };
+        let snap = GpuSnapshot {
+            freq_mhz: None,
+            temp_celsius: None,
+        };
         let cloned = snap.clone();
         assert!(cloned.freq_mhz.is_none());
         assert!(cloned.temp_celsius.is_none());

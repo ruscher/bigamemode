@@ -3,30 +3,30 @@
 //! Provides a tray icon when the window is hidden. Left-click activates,
 //! right-click menu offers Show/Quit.
 
+use ksni::blocking::TrayMethods;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
-use ksni::blocking::TrayMethods;
 
-use gtk4::gdk_pixbuf;
 use crate::i18n::i18n;
+use gtk4::gdk_pixbuf;
 
 fn load_icon_as_pixmap(name: &str) -> Option<ksni::Icon> {
     let resource_path = format!("/com/biglinux/BiGameMode/icons/{}.svg", name);
     let pixbuf = gdk_pixbuf::Pixbuf::from_resource_at_scale(&resource_path, 22, 22, true).ok()?;
-    
+
     let width = pixbuf.width();
     let height = pixbuf.height();
     let pixels = pixbuf.read_pixel_bytes();
-    
+
     // SNI expects ARGB (32-bit), Pixbuf is RGBA.
     // We need to convert RGBA to ARGB.
     let mut data = Vec::with_capacity(pixels.len());
     let src = pixels.as_ref();
     for i in (0..src.len()).step_by(4) {
         let r = src[i];
-        let g = src[i+1];
-        let b = src[i+2];
-        let a = src[i+3];
+        let g = src[i + 1];
+        let b = src[i + 2];
+        let a = src[i + 3];
         data.push(a);
         data.push(r);
         data.push(g);
@@ -84,7 +84,10 @@ impl ksni::Tray for BiGameTray {
     }
 
     fn icon_name(&self) -> String {
-        self.status.read().map(|s| s.icon_name()).unwrap_or_else(|_| Status::Idle.icon_name())
+        self.status
+            .read()
+            .map(|s| s.icon_name())
+            .unwrap_or_else(|_| Status::Idle.icon_name())
     }
 
     fn icon_pixmap(&self) -> Vec<ksni::Icon> {
@@ -192,11 +195,11 @@ impl TrayHandle {
 pub fn spawn() -> (TrayHandle, mpsc::Receiver<TrayAction>) {
     let (tx, rx) = mpsc::channel();
     let status = Arc::new(RwLock::new(Status::Idle));
-    let tray = BiGameTray { 
-        tx, 
-        status: Arc::clone(&status) 
+    let tray = BiGameTray {
+        tx,
+        status: Arc::clone(&status),
     };
     let handle = tray.spawn().expect("Failed to spawn system tray");
-    
+
     (TrayHandle { status, handle }, rx)
 }

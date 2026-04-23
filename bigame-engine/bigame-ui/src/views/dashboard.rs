@@ -2,9 +2,9 @@
 
 use std::time::Duration;
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::{gio, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 use crate::widgets;
@@ -24,22 +24,26 @@ pub fn build() -> adw::PreferencesPage {
     // Real-time Dashboard Grid
     let metrics_group = adw::PreferencesGroup::new();
     metrics_group.set_title(&i18n("Real-time Telemetry"));
-    
+
     let row1 = gtk4::Box::new(gtk4::Orientation::Horizontal, 12);
     row1.set_homogeneous(true);
     let row2 = gtk4::Box::new(gtk4::Orientation::Horizontal, 12);
     row2.set_homogeneous(true);
 
     let (cpu_card, cpu_val, cpu_spark) = make_dashboard_card(&i18n("CPU Freq"), "cpu-symbolic");
-    let (gpu_card, gpu_val, gpu_spark) = make_dashboard_card(&i18n("GPU Freq"), "video-display-symbolic");
-    let (temp_card, temp_val, temp_spark) = make_dashboard_card(&i18n("GPU Temp"), "freon-gpu-temperature-symbolic");
+    let (gpu_card, gpu_val, gpu_spark) =
+        make_dashboard_card(&i18n("GPU Freq"), "video-display-symbolic");
+    let (temp_card, temp_val, temp_spark) =
+        make_dashboard_card(&i18n("GPU Temp"), "freon-gpu-temperature-symbolic");
     row1.append(&cpu_card);
     row1.append(&gpu_card);
     row1.append(&temp_card);
 
     let (ram_card, ram_val, ram_spark) = make_dashboard_card(&i18n("RAM Usage"), "memory-symbolic");
-    let (disk_card, disk_val, disk_spark) = make_dashboard_card(&i18n("Disk I/O"), "drive-harddisk-symbolic");
-    let (ping_card, ping_val, ping_spark) = make_dashboard_card(&i18n("Latency"), "network-wireless-symbolic");
+    let (disk_card, disk_val, disk_spark) =
+        make_dashboard_card(&i18n("Disk I/O"), "drive-harddisk-symbolic");
+    let (ping_card, ping_val, ping_spark) =
+        make_dashboard_card(&i18n("Latency"), "network-wireless-symbolic");
     row2.append(&ram_card);
     row2.append(&disk_card);
     row2.append(&ping_card);
@@ -68,11 +72,21 @@ pub fn build() -> adw::PreferencesPage {
     let lsfg_installed = lsfg_is_installed();
     let lsfg_row = adw::ActionRow::builder()
         .title(i18n("Frame Generation (lsfg-vk)"))
-        .subtitle(i18n("Vulkan implicit layer · No Steam launch options needed"))
+        .subtitle(i18n(
+            "Vulkan implicit layer · No Steam launch options needed",
+        ))
         .build();
     let lsfg_badge = gtk4::Label::builder()
-        .label(if lsfg_installed { i18n("Ready") } else { i18n("Not installed") })
-        .css_classes(if lsfg_installed { ["success-badge"] } else { ["warning-badge"] })
+        .label(if lsfg_installed {
+            i18n("Ready")
+        } else {
+            i18n("Not installed")
+        })
+        .css_classes(if lsfg_installed {
+            ["success-badge"]
+        } else {
+            ["warning-badge"]
+        })
         .valign(gtk4::Align::Center)
         .build();
     lsfg_row.add_suffix(&lsfg_badge);
@@ -113,18 +127,30 @@ pub fn build() -> adw::PreferencesPage {
     let troubleshoot_group = build_troubleshooting_group();
     page.add(&troubleshoot_group);
 
-
-
     // Detected games section — refresh button re-detects on demand
     let games_group = build_games_group();
     page.add(&games_group);
 
     // Live telemetry + daemon status polling (1Hz, main thread context)
     spawn_telemetry_poller(
-        cpu_val, gpu_val, temp_val, disk_val, ping_val, ram_val,
-        power_row, active_profile_row.clone(), scx_row.clone(), vcache_row.clone(), falcond_badge.clone(),
+        cpu_val,
+        gpu_val,
+        temp_val,
+        disk_val,
+        ping_val,
+        ram_val,
+        power_row,
+        active_profile_row.clone(),
+        scx_row.clone(),
+        vcache_row.clone(),
+        falcond_badge.clone(),
         lsfg_badge.clone(),
-        cpu_spark, gpu_spark, temp_spark, disk_spark, ping_spark, ram_spark,
+        cpu_spark,
+        gpu_spark,
+        temp_spark,
+        disk_spark,
+        ping_spark,
+        ram_spark,
     );
 
     // Immediate falcond status refresh via file-change events
@@ -144,8 +170,7 @@ fn spawn_status_watcher(
     badge: gtk4::Label,
 ) {
     let file = gio::File::for_path(bigame_core::status::STATUS_PATH);
-    let Ok(monitor) = file.monitor_file(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE)
-    else {
+    let Ok(monitor) = file.monitor_file(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) else {
         return; // inotify not available — polling still covers this
     };
 
@@ -158,7 +183,13 @@ fn spawn_status_watcher(
             return;
         }
         let status = bigame_core::status::read();
-        apply_falcond_status(status.as_ref(), &active_profile_row, &scx_row, &vcache_row, &badge);
+        apply_falcond_status(
+            status.as_ref(),
+            &active_profile_row,
+            &scx_row,
+            &vcache_row,
+            &badge,
+        );
     });
 
     // Keep the monitor alive for the lifetime of the dashboard widget.
@@ -189,7 +220,11 @@ fn apply_falcond_status(
         }
 
         // SCX: distinguish not-installed / disabled / active
-        let scx = if st.current_scx.is_empty() { &st.config_scx } else { &st.current_scx };
+        let scx = if st.current_scx.is_empty() {
+            &st.config_scx
+        } else {
+            &st.current_scx
+        };
         if !has_schedulers {
             scx_row.set_subtitle(&i18n("Not installed — sudo pacman -S scx-scheds"));
         } else if scx.is_empty() || scx == "none" {
@@ -199,10 +234,17 @@ fn apply_falcond_status(
         }
 
         // VCache: distinguish hardware unavailable / disabled / active
-        let vc = if st.current_vcache.is_empty() { &st.config_vcache } else { &st.current_vcache };
+        let vc = if st.current_vcache.is_empty() {
+            &st.config_vcache
+        } else {
+            &st.current_vcache
+        };
         if !vcache_available {
             let cpu = read_cpu_model_sync();
-            vcache_row.set_subtitle(&format!("{} — {cpu}", i18n("Not available (requires X3D CPU)")));
+            vcache_row.set_subtitle(&format!(
+                "{} — {cpu}",
+                i18n("Not available (requires X3D CPU)")
+            ));
         } else if vc.is_empty() || vc == "none" {
             vcache_row.set_subtitle(&i18n("Disabled"));
         } else {
@@ -264,16 +306,29 @@ fn spawn_telemetry_poller(
             // LSFG-VK Check
             let is_lsfg = gio::spawn_blocking(move || {
                 let status = bigame_core::status::read();
-                let active_game = status.as_ref().and_then(|s| s.active_profile.clone()).unwrap_or_default();
+                let active_game = status
+                    .as_ref()
+                    .and_then(|s| s.active_profile.clone())
+                    .unwrap_or_default();
                 if active_game.is_empty() || active_game == "None" {
                     return false;
                 }
-                if let Ok(out) = std::process::Command::new("pgrep").arg("-f").arg(&active_game).output() {
+                if let Ok(out) = std::process::Command::new("pgrep")
+                    .arg("-f")
+                    .arg(&active_game)
+                    .output()
+                {
                     for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
                         let map_path = format!("/proc/{}/maps", pid_str);
                         if let Ok(status) = std::process::Command::new("timeout")
-                            .args(["0.2", "grep", "-qE", "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk", &map_path])
-                            .status() 
+                            .args([
+                                "0.2",
+                                "grep",
+                                "-qE",
+                                "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk",
+                                &map_path,
+                            ])
+                            .status()
                         {
                             if status.success() {
                                 return true;
@@ -282,7 +337,9 @@ fn spawn_telemetry_poller(
                     }
                 }
                 false
-            }).await.unwrap_or(false);
+            })
+            .await
+            .unwrap_or(false);
 
             if is_lsfg != prev_is_lsfg {
                 prev_is_lsfg = is_lsfg;
@@ -298,12 +355,19 @@ fn spawn_telemetry_poller(
                 lsfg_badge.remove_css_class("warning-badge");
                 lsfg_badge.add_css_class("success-badge");
             } else {
-                let installed = std::path::Path::new("/usr/share/vulkan/implicit_layer.d/lsfg-vk.json").exists()
-                             || std::path::Path::new("/etc/vulkan/implicit_layer.d/lsfg-vk.json").exists();
-                
-                let text = if installed { i18n("Ready") } else { i18n("Not installed") };
+                let installed =
+                    std::path::Path::new("/usr/share/vulkan/implicit_layer.d/lsfg-vk.json")
+                        .exists()
+                        || std::path::Path::new("/etc/vulkan/implicit_layer.d/lsfg-vk.json")
+                            .exists();
+
+                let text = if installed {
+                    i18n("Ready")
+                } else {
+                    i18n("Not installed")
+                };
                 lsfg_badge.set_text(&text);
-                
+
                 if installed {
                     lsfg_badge.remove_css_class("warning-badge");
                     lsfg_badge.add_css_class("success-badge");
@@ -317,7 +381,11 @@ fn spawn_telemetry_poller(
             let cpu_text = gio::spawn_blocking(read_cpu_freq)
                 .await
                 .unwrap_or_else(|_| "N/A".into());
-            if let Some(mhz) = cpu_text.split_whitespace().next().and_then(|s| s.parse::<f64>().ok()) {
+            if let Some(mhz) = cpu_text
+                .split_whitespace()
+                .next()
+                .and_then(|s| s.parse::<f64>().ok())
+            {
                 cpu_spark.push(mhz);
                 cpu_val.set_text(&format!("{:.1} GHz", mhz / 1000.0));
             } else {
@@ -329,7 +397,10 @@ fn spawn_telemetry_poller(
                 .await
                 .unwrap_or_else(|_| "N/A".into());
             gpu_val.set_text(&gpu_text);
-            if let Ok(mhz) = gpu_text.trim_end_matches(|c: char| !c.is_ascii_digit()).parse::<f64>() {
+            if let Ok(mhz) = gpu_text
+                .trim_end_matches(|c: char| !c.is_ascii_digit())
+                .parse::<f64>()
+            {
                 gpu_spark.push(mhz);
             }
 
@@ -344,23 +415,27 @@ fn spawn_telemetry_poller(
             temp_val.set_text(&temp_text);
             temp_spark.set_color(match css_class {
                 "temp-warm" => Some((1.0, 0.65, 0.0)),
-                "temp-hot"  => Some((0.9, 0.15, 0.15)),
-                _           => None,
+                "temp-hot" => Some((0.9, 0.15, 0.15)),
+                _ => None,
             });
-            if let Ok(c) = temp_text.chars().take_while(char::is_ascii_digit).collect::<String>().parse::<f64>() {
+            if let Ok(c) = temp_text
+                .chars()
+                .take_while(char::is_ascii_digit)
+                .collect::<String>()
+                .parse::<f64>()
+            {
                 temp_spark.push(c);
             }
 
             // Disk I/O
-            let cur_disk = gio::spawn_blocking(read_disk_sectors)
-                .await
-                .ok()
-                .flatten();
+            let cur_disk = gio::spawn_blocking(read_disk_sectors).await.ok().flatten();
             if let (Some(prev), Some(cur)) = (prev_disk, cur_disk) {
                 let read_kb = (cur.0.saturating_sub(prev.0) * 512) / 1024;
                 let write_kb = (cur.1.saturating_sub(prev.1) * 512) / 1024;
                 disk_val.set_text(&format!("{}R {}W KB/s", read_kb, write_kb));
-                disk_spark.push(f64::from(u32::try_from(read_kb + write_kb).unwrap_or(u32::MAX)));
+                disk_spark.push(f64::from(
+                    u32::try_from(read_kb + write_kb).unwrap_or(u32::MAX),
+                ));
             } else {
                 disk_spark.push(0.0);
             }
@@ -372,7 +447,11 @@ fn spawn_telemetry_poller(
                 .await
                 .unwrap_or_else(|_| "N/A".into());
             ping_val.set_text(&ping_text);
-            if let Some(ms) = ping_text.split_whitespace().next().and_then(|s| s.parse::<f64>().ok()) {
+            if let Some(ms) = ping_text
+                .split_whitespace()
+                .next()
+                .and_then(|s| s.parse::<f64>().ok())
+            {
                 ping_spark.push(ms);
             }
 
@@ -383,7 +462,9 @@ fn spawn_telemetry_poller(
             {
                 let parts: Vec<&str> = ram_text.split_whitespace().collect();
                 if parts.len() >= 3 {
-                    if let (Ok(used), Ok(total)) = (parts[0].parse::<f64>(), parts[2].parse::<f64>()) {
+                    if let (Ok(used), Ok(total)) =
+                        (parts[0].parse::<f64>(), parts[2].parse::<f64>())
+                    {
                         if total > 0.0 {
                             let perc = used / total * 100.0;
                             ram_spark.push(perc);
@@ -425,7 +506,13 @@ fn spawn_telemetry_poller(
                 first_tick = false;
             }
 
-            apply_falcond_status(falcond.as_ref(), &active_profile_row, &scx_row, &vcache_row, &falcond_badge);
+            apply_falcond_status(
+                falcond.as_ref(),
+                &active_profile_row,
+                &scx_row,
+                &vcache_row,
+                &falcond_badge,
+            );
 
             let pp_text = gio::spawn_blocking(|| {
                 bigame_core::dbus::power_profile_get().unwrap_or_else(|| i18n("Unavailable"))
@@ -556,11 +643,15 @@ fn read_ram_usage() -> String {
     let mut mem_avail = 0u64;
     for line in content.lines() {
         if let Some(rest) = line.strip_prefix("MemTotal:") {
-            mem_total = rest.split_whitespace().next()
+            mem_total = rest
+                .split_whitespace()
+                .next()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(0);
         } else if let Some(rest) = line.strip_prefix("MemAvailable:") {
-            mem_avail = rest.split_whitespace().next()
+            mem_avail = rest
+                .split_whitespace()
+                .next()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(0);
         }
@@ -574,7 +665,14 @@ fn read_ram_usage() -> String {
 }
 
 /// Create a beautiful dashboard card with an embedded sparkline.
-fn make_dashboard_card(title: &str, icon: &str) -> (gtk4::Box, gtk4::Label, crate::widgets::sparkline::SparkHandle) {
+fn make_dashboard_card(
+    title: &str,
+    icon: &str,
+) -> (
+    gtk4::Box,
+    gtk4::Label,
+    crate::widgets::sparkline::SparkHandle,
+) {
     let card = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
     card.add_css_class("card");
     // Make it expand and stand out, but enforce a minimum width to avoid jitter
@@ -747,10 +845,18 @@ fn build_games_group() -> adw::PreferencesGroup {
     refresh_btn.connect_clicked(move |btn| {
         // Walk up widget tree: button → PreferencesGroup → PreferencesPage
         // gtk4-rs 0.9.x ancestor() takes a glib::Type, not a generic param.
-        let Some(old_group_w) = btn.ancestor(adw::PreferencesGroup::static_type()) else { return };
-        let Ok(old_group) = old_group_w.downcast::<adw::PreferencesGroup>() else { return };
-        let Some(parent_widget) = old_group.parent() else { return };
-        let Ok(page) = parent_widget.downcast::<adw::PreferencesPage>() else { return };
+        let Some(old_group_w) = btn.ancestor(adw::PreferencesGroup::static_type()) else {
+            return;
+        };
+        let Ok(old_group) = old_group_w.downcast::<adw::PreferencesGroup>() else {
+            return;
+        };
+        let Some(parent_widget) = old_group.parent() else {
+            return;
+        };
+        let Ok(page) = parent_widget.downcast::<adw::PreferencesPage>() else {
+            return;
+        };
         old_group.unparent();
         page.add(&build_games_group());
     });
@@ -799,12 +905,15 @@ fn populate_games_rows(group: &adw::PreferencesGroup) {
                     name: exe.clone(),
                     ..Default::default()
                 };
-                if let Err(e) = bigame_core::profiles::save(&profile) {
-                    tracing::warn!("Failed to create profile: {e}");
-                } else {
-                    crate::widgets::toast::show(b, &i18n("Profile created"));
-                    b.set_sensitive(false);
-                }
+                let btn_ref = b.clone();
+                gtk4::glib::spawn_future_local(async move {
+                    if let Err(e) = bigame_core::profiles::save(&profile).await {
+                        tracing::warn!("Failed to create profile: {e}");
+                    } else {
+                        crate::widgets::toast::show(&btn_ref, &i18n("Profile created"));
+                        btn_ref.set_sensitive(false);
+                    }
+                });
             });
             row.add_suffix(&btn);
         }
@@ -824,9 +933,7 @@ fn populate_games_rows(group: &adw::PreferencesGroup) {
                 .unwrap_or_default();
             let cmd = exe.clone();
             let btn_ref = b.clone();
-            gio::spawn_blocking(move || {
-                bigame_core::gamescope::launch(&config, &cmd, &[])
-            });
+            gio::spawn_blocking(move || bigame_core::gamescope::launch(&config, &cmd, &[]));
             crate::widgets::toast::show(&btn_ref, &i18n("Launching with Gamescope…"));
         });
         row.add_suffix(&gs_btn);

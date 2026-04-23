@@ -78,7 +78,11 @@ impl Config {
 ///
 /// # Errors
 /// Returns error if gamescope binary is not found or fails to spawn.
-pub fn launch(config: &Config, command: &str, command_args: &[&str]) -> Result<std::process::Child> {
+pub fn launch(
+    config: &Config,
+    command: &str,
+    command_args: &[&str],
+) -> Result<std::process::Child> {
     config
         .build_command(command, command_args)
         .spawn()
@@ -87,16 +91,13 @@ pub fn launch(config: &Config, command: &str, command_args: &[&str]) -> Result<s
 
 /// Global default Gamescope config path: `$XDG_CONFIG_HOME/bigame-mode/gamescope.toml`.
 fn global_config_path() -> std::path::PathBuf {
-    let config = std::env::var("XDG_CONFIG_HOME")
-        .map_or_else(
-            |_| {
-                std::path::PathBuf::from(
-                    std::env::var("HOME").unwrap_or_else(|_| "/tmp".into()),
-                )
+    let config = std::env::var("XDG_CONFIG_HOME").map_or_else(
+        |_| {
+            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| "/tmp".into()))
                 .join(".config")
-            },
-            std::path::PathBuf::from,
-        );
+        },
+        std::path::PathBuf::from,
+    );
     config.join("bigame-mode").join("gamescope.toml")
 }
 
@@ -193,9 +194,15 @@ mod tests {
         assert_eq!(
             args,
             vec![
-                "-w", "2560", "-h", "1440",
-                "--fsr", "--fsr-sharpness", "0",
-                "-r", "60",
+                "-w",
+                "2560",
+                "-h",
+                "1440",
+                "--fsr",
+                "--fsr-sharpness",
+                "0",
+                "-r",
+                "60",
                 "--mangoapp"
             ]
         );
@@ -226,7 +233,10 @@ mod tests {
         let cfg = Config::default();
         let cmd = cfg.build_command("steam", &["-gamepadui"]);
         let prog = cmd.get_program().to_string_lossy().to_string();
-        let args: Vec<String> = cmd.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+        let args: Vec<String> = cmd
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
         assert_eq!(prog, "gamescope");
         // ends with: -- steam -gamepadui
         assert!(args.contains(&"--".to_owned()));
@@ -237,11 +247,12 @@ mod tests {
     #[test]
     fn save_load_global_round_trip() {
         // Redirect XDG_CONFIG_HOME to a temp dir so we don't pollute the user's config.
-        let tmp = std::env::temp_dir()
-            .join(format!("bigame_gs_test_{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("bigame_gs_test_{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         // SAFETY: single-threaded test; no other threads read XDG_CONFIG_HOME here.
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", &tmp); }
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", &tmp);
+        }
 
         let cfg = Config {
             width: 2560,
@@ -263,18 +274,24 @@ mod tests {
         // Cleanup
         std::fs::remove_dir_all(&tmp).ok();
         // SAFETY: restoring env to pre-test state.
-        unsafe { std::env::remove_var("XDG_CONFIG_HOME"); }
+        unsafe {
+            std::env::remove_var("XDG_CONFIG_HOME");
+        }
     }
 
     #[test]
     fn load_global_missing_file_returns_default() {
         // SAFETY: single-threaded test; no other threads read XDG_CONFIG_HOME here.
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/bigame_gs_nonexistent_99999"); }
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", "/tmp/bigame_gs_nonexistent_99999");
+        }
         let cfg = load_global();
         assert_eq!(cfg.width, 1920);
         assert_eq!(cfg.height, 1080);
         assert!(!cfg.fsr);
         // SAFETY: restoring env to pre-test state.
-        unsafe { std::env::remove_var("XDG_CONFIG_HOME"); }
+        unsafe {
+            std::env::remove_var("XDG_CONFIG_HOME");
+        }
     }
 }

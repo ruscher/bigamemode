@@ -3,9 +3,9 @@
 //! Supports background daemon mode: closing the window hides it
 //! instead of quitting. Re-activate to show again.
 
-use libadwaita as adw;
 use adw::prelude::*;
 use gtk4::glib;
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 use crate::style;
@@ -20,9 +20,7 @@ const APP_ID: &str = "com.biglinux.BiGameMode";
 /// The app stays alive in the background after the window is closed.
 /// Re-activating (e.g. via desktop file) will re-present the window.
 pub fn run() -> adw::glib::ExitCode {
-    let app = adw::Application::builder()
-        .application_id(APP_ID)
-        .build();
+    let app = adw::Application::builder().application_id(APP_ID).build();
 
     app.connect_startup(|app| {
         style::load_css();
@@ -146,8 +144,18 @@ fn show_about_dialog(app: &adw::Application) {
         .debug_info_filename("bigame-mode-debug.txt")
         .build();
 
-    dialog.add_credit_section(Some(&i18n("Developers")), &["Rafael Ruscher <rruscher@gmail.com>"]);
-    dialog.add_credit_section(Some(&i18n("Special Thanks")), &["Barnabé di Kartola", "Alessandro (System Infotech)", "Pacheco (System Infotech)"]);
+    dialog.add_credit_section(
+        Some(&i18n("Developers")),
+        &["Rafael Ruscher <rruscher@gmail.com>"],
+    );
+    dialog.add_credit_section(
+        Some(&i18n("Special Thanks")),
+        &[
+            "Barnabé di Kartola",
+            "Alessandro (System Infotech)",
+            "Pacheco (System Infotech)",
+        ],
+    );
 
     if let Some(win) = app.active_window() {
         dialog.present(Some(&win));
