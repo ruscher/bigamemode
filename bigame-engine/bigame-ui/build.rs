@@ -23,19 +23,12 @@ fn main() {
         std::fs::copy(&css_src, stage_dir.join("style.css")).expect("copy style.css");
     }
 
-    // Copy icons into stage (source: data/icons/ if present, else usr/share/icons/)
-    let icons_in_data = data_dir.join("icons");
-    let icons_in_usr = workspace.join("usr/share/icons");
-    let icons_src = if icons_in_data.exists() {
-        Some(icons_in_data)
-    } else if icons_in_usr.exists() {
-        Some(icons_in_usr)
-    } else {
-        None
-    };
-    if let Some(src) = icons_src {
+    // Copy usr/share/icons/ → stage/icons/ so glib-compile-resources sees
+    // icons/hicolor/scalable/apps/... as referenced in resources.gresource.xml
+    let icons_src = workspace.join("usr/share/icons");
+    if icons_src.exists() {
         let _ = Command::new("cp")
-            .args(["-r", src.to_str().unwrap(), stage_dir.to_str().unwrap()])
+            .args(["-r", icons_src.to_str().unwrap(), stage_dir.join("icons").to_str().unwrap()])
             .status();
     }
 
