@@ -67,6 +67,14 @@ pub fn build() -> adw::PreferencesPage {
         .build();
     booster_group.add(&power_row);
 
+    let (turbo_row, turbo_badge) = make_runtime_status_row(
+        &i18n("Turbo Mode"),
+        &i18n("Required to apply advanced video optimizations"),
+        &i18n("Checking…"),
+        "dim-label",
+    );
+    booster_group.add(&turbo_row);
+
     // lsfg-vk implicit layer status (static check — installation-level)
     // Covers both package naming variants and all standard Vulkan layer dirs.
     let lsfg_installed = lsfg_is_installed();
@@ -92,6 +100,134 @@ pub fn build() -> adw::PreferencesPage {
     lsfg_row.add_suffix(&lsfg_badge);
     booster_group.add(&lsfg_row);
     page.add(&booster_group);
+
+    // Video runtime status section (clear visual proof while game is running)
+    let runtime_group = adw::PreferencesGroup::new();
+    runtime_group.set_title(&i18n("Video Runtime Status"));
+
+    let (gamescope_rt_row, gamescope_rt_badge) = make_runtime_status_row(
+        &i18n("Gamescope Upscaling"),
+        &i18n("Runtime detection for Gamescope wrapper"),
+        &i18n("Waiting"),
+        "dim-label",
+    );
+    runtime_group.add(&gamescope_rt_row);
+
+    let (wine_fsr_rt_row, wine_fsr_rt_badge) = make_runtime_status_row(
+        &i18n("Wine Fullscreen FSR"),
+        &i18n("Checks WINE_FULLSCREEN_FSR in game process environment"),
+        &i18n("Waiting"),
+        "dim-label",
+    );
+    runtime_group.add(&wine_fsr_rt_row);
+
+    let (vkbasalt_rt_row, vkbasalt_rt_badge) = make_runtime_status_row(
+        &i18n("vkBasalt Injection"),
+        &i18n("Checks ENABLE_VKBASALT in game process environment"),
+        &i18n("Waiting"),
+        "dim-label",
+    );
+    runtime_group.add(&vkbasalt_rt_row);
+
+    let (framegen_rt_row, framegen_rt_badge) = make_runtime_status_row(
+        &i18n("Frame Generation Backend"),
+        &i18n("Shows selected backend status during active game"),
+        &i18n("Waiting"),
+        "dim-label",
+    );
+    runtime_group.add(&framegen_rt_row);
+
+    let diagnostics_row = adw::ActionRow::builder()
+        .title(i18n("Runtime Diagnostics"))
+        .subtitle(i18n("Collects current checks for Turbo/game/env detection"))
+        .build();
+    let diagnostics_btn = gtk4::Button::builder()
+        .label(i18n("Run Diagnostics"))
+        .valign(gtk4::Align::Center)
+        .build();
+    let save_diag_btn = gtk4::Button::builder()
+        .icon_name("document-save-symbolic")
+        .tooltip_text(i18n("Save diagnostics log"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    let copy_diag_btn = gtk4::Button::builder()
+        .icon_name("edit-copy-symbolic")
+        .tooltip_text(i18n("Copy diagnostics report"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    diagnostics_btn.connect_clicked(|btn| {
+        let btn_ref = btn.clone();
+        gtk4::glib::spawn_future_local(async move {
+            let report = gio::spawn_blocking(build_runtime_diagnostics_report)
+                .await
+                .unwrap_or_else(|_| i18n("Diagnostics failed"));
+
+            if let Some(root) = btn_ref.root() {
+                if let Ok(win) = root.downcast::<adw::ApplicationWindow>() {
+                    let dlg = adw::AlertDialog::builder()
+                        .heading(i18n("Runtime Diagnostics Report"))
+                        .body(&report)
+                        .build();
+                    dlg.add_response("ok", &i18n("Close"));
+                    dlg.set_default_response(Some("ok"));
+                    dlg.present(Some(&win));
+                    return;
+                }
+            }
+            tracing::warn!("unable to present diagnostics dialog (no root window)");
+        });
+    });
+    save_diag_btn.connect_clicked(|btn| {
+        let btn_ref = btn.clone();
+        gtk4::glib::spawn_future_local(async move {
+            let result = gio::spawn_blocking(|| {
+                let report = build_runtime_diagnostics_report();
+                let path = std::env::var("HOME")
+                    .map(std::path::PathBuf::from)
+                    .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
+                    .join("bigame-diagnostics.log");
+                std::fs::write(&path, report)
+                    .map(|_| path)
+                    .map_err(|e| format!("{}: {}", i18n("Failed to save diagnostics"), e))
+            })
+            .await;
+
+            match result {
+                Ok(Ok(path)) => crate::widgets::toast::show(
+                    &btn_ref,
+                    &format!("{}: {}", i18n("Diagnostics saved"), path.display()),
+                ),
+                Ok(Err(err)) => crate::widgets::toast::show(&btn_ref, &err),
+                Err(_) => crate::widgets::toast::show(
+                    &btn_ref,
+                    &i18n("Failed to save diagnostics"),
+                ),
+            }
+        });
+    });
+    copy_diag_btn.connect_clicked(|btn| {
+        let btn_ref = btn.clone();
+        gtk4::glib::spawn_future_local(async move {
+            let report = gio::spawn_blocking(build_runtime_diagnostics_report)
+                .await
+                .unwrap_or_else(|_| i18n("Diagnostics failed"));
+
+            if let Some(display) = gtk4::gdk::Display::default() {
+                display.clipboard().set_text(&report);
+                crate::widgets::toast::show(&btn_ref, &i18n("Diagnostics copied"));
+            } else {
+                crate::widgets::toast::show(&btn_ref, &i18n("Failed to copy diagnostics"));
+            }
+        });
+    });
+    diagnostics_row.add_suffix(&diagnostics_btn);
+    diagnostics_row.add_suffix(&save_diag_btn);
+    diagnostics_row.add_suffix(&copy_diag_btn);
+    runtime_group.add(&diagnostics_row);
+
+    page.add(&runtime_group);
 
     // Falcond status section
     let falcond_group = adw::PreferencesGroup::new();
@@ -140,11 +276,21 @@ pub fn build() -> adw::PreferencesPage {
         ping_val,
         ram_val,
         power_row,
+        turbo_row,
+        turbo_badge,
         active_profile_row.clone(),
         scx_row.clone(),
         vcache_row.clone(),
         falcond_badge.clone(),
         lsfg_badge.clone(),
+        gamescope_rt_row,
+        gamescope_rt_badge,
+        wine_fsr_rt_row,
+        wine_fsr_rt_badge,
+        vkbasalt_rt_row,
+        vkbasalt_rt_badge,
+        framegen_rt_row,
+        framegen_rt_badge,
         cpu_spark,
         gpu_spark,
         temp_spark,
@@ -285,11 +431,21 @@ fn spawn_telemetry_poller(
     ping_val: gtk4::Label,
     ram_val: gtk4::Label,
     power_row: adw::ActionRow,
+    turbo_row: adw::ActionRow,
+    turbo_badge: gtk4::Label,
     active_profile_row: adw::ActionRow,
     scx_row: adw::ActionRow,
     vcache_row: adw::ActionRow,
     falcond_badge: gtk4::Label,
     lsfg_badge: gtk4::Label,
+    gamescope_rt_row: adw::ActionRow,
+    gamescope_rt_badge: gtk4::Label,
+    wine_fsr_rt_row: adw::ActionRow,
+    wine_fsr_rt_badge: gtk4::Label,
+    vkbasalt_rt_row: adw::ActionRow,
+    vkbasalt_rt_badge: gtk4::Label,
+    framegen_rt_row: adw::ActionRow,
+    framegen_rt_badge: gtk4::Label,
     cpu_spark: crate::widgets::sparkline::SparkHandle,
     gpu_spark: crate::widgets::sparkline::SparkHandle,
     temp_spark: crate::widgets::sparkline::SparkHandle,
@@ -302,81 +458,8 @@ fn spawn_telemetry_poller(
         let mut first_tick = true;
         let mut prev_disk: Option<(u64, u64)> = None;
         let mut prev_is_lsfg = false;
+        let mut prev_runtime: Option<(bool, bool, bool, bool, bool)> = None;
         loop {
-            // LSFG-VK Check
-            let is_lsfg = gio::spawn_blocking(move || {
-                let status = bigame_core::status::read();
-                let active_game = status
-                    .as_ref()
-                    .and_then(|s| s.active_profile.clone())
-                    .unwrap_or_default();
-                if active_game.is_empty() || active_game == "None" {
-                    return false;
-                }
-                if let Ok(out) = std::process::Command::new("pgrep")
-                    .arg("-f")
-                    .arg(&active_game)
-                    .output()
-                {
-                    for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
-                        let map_path = format!("/proc/{}/maps", pid_str);
-                        if let Ok(status) = std::process::Command::new("timeout")
-                            .args([
-                                "0.2",
-                                "grep",
-                                "-qE",
-                                "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk",
-                                &map_path,
-                            ])
-                            .status()
-                        {
-                            if status.success() {
-                                return true;
-                            }
-                        }
-                    }
-                }
-                false
-            })
-            .await
-            .unwrap_or(false);
-
-            if is_lsfg != prev_is_lsfg {
-                prev_is_lsfg = is_lsfg;
-                if is_lsfg {
-                    tracing::info!("LSFG-VK Lossless Scaling ativado no contexto do jogo.");
-                } else {
-                    tracing::info!("LSFG-VK Lossless Scaling desativado.");
-                }
-            }
-
-            if is_lsfg {
-                lsfg_badge.set_text(&i18n("Active (Generating Frames)"));
-                lsfg_badge.remove_css_class("warning-badge");
-                lsfg_badge.add_css_class("success-badge");
-            } else {
-                let installed =
-                    std::path::Path::new("/usr/share/vulkan/implicit_layer.d/lsfg-vk.json")
-                        .exists()
-                        || std::path::Path::new("/etc/vulkan/implicit_layer.d/lsfg-vk.json")
-                            .exists();
-
-                let text = if installed {
-                    i18n("Ready")
-                } else {
-                    i18n("Not installed")
-                };
-                lsfg_badge.set_text(&text);
-
-                if installed {
-                    lsfg_badge.remove_css_class("warning-badge");
-                    lsfg_badge.add_css_class("success-badge");
-                } else {
-                    lsfg_badge.remove_css_class("success-badge");
-                    lsfg_badge.add_css_class("warning-badge");
-                }
-            }
-
             // CPU
             let cpu_text = gio::spawn_blocking(read_cpu_freq)
                 .await
@@ -521,6 +604,151 @@ fn spawn_telemetry_poller(
             .unwrap_or_else(|_| "N/A".into());
             power_row.set_subtitle(&pp_text);
 
+            let turbo_enabled = pp_text.eq_ignore_ascii_case("performance");
+            if turbo_enabled {
+                turbo_badge.set_text(&i18n("Active"));
+                turbo_badge.remove_css_class("warning-badge");
+                turbo_badge.remove_css_class("error-badge");
+                turbo_badge.add_css_class("success-badge");
+                turbo_row.set_subtitle(&i18n("Performance profile active"));
+            } else {
+                turbo_badge.set_text(&i18n("Inactive"));
+                turbo_badge.remove_css_class("success-badge");
+                turbo_badge.remove_css_class("error-badge");
+                turbo_badge.add_css_class("warning-badge");
+                turbo_row.set_subtitle(&i18n("Enable Booster Mode to apply video optimizations"));
+            }
+
+            let active_game = falcond
+                .as_ref()
+                .and_then(|s| s.active_profile.clone())
+                .filter(|p| !p.is_empty() && p != "None");
+            let has_active_game = active_game.is_some();
+
+            let runtime = gio::spawn_blocking({
+                let active_game = active_game.clone();
+                move || collect_video_runtime(active_game.as_deref())
+            })
+            .await
+            .unwrap_or_default();
+
+            if runtime.lsfg_active != prev_is_lsfg {
+                prev_is_lsfg = runtime.lsfg_active;
+                if runtime.lsfg_active {
+                    tracing::info!("LSFG-VK active for current game context");
+                } else {
+                    tracing::info!("LSFG-VK inactive for current game context");
+                }
+            }
+
+            if !runtime.lsfg_enabled {
+                lsfg_badge.set_text(&i18n("Off"));
+                lsfg_badge.remove_css_class("success-badge");
+                lsfg_badge.remove_css_class("warning-badge");
+                lsfg_badge.add_css_class("dim-label");
+            } else if runtime.lsfg_active {
+                lsfg_badge.set_text(&i18n("Active (Generating Frames)"));
+                lsfg_badge.remove_css_class("dim-label");
+                lsfg_badge.remove_css_class("warning-badge");
+                lsfg_badge.add_css_class("success-badge");
+            } else if runtime.lsfg_installed {
+                lsfg_badge.set_text(&i18n("Ready"));
+                lsfg_badge.remove_css_class("dim-label");
+                lsfg_badge.remove_css_class("warning-badge");
+                lsfg_badge.add_css_class("success-badge");
+            } else {
+                lsfg_badge.set_text(&i18n("Not installed"));
+                lsfg_badge.remove_css_class("dim-label");
+                lsfg_badge.remove_css_class("success-badge");
+                lsfg_badge.add_css_class("warning-badge");
+            }
+
+            apply_runtime_feature_status(
+                &gamescope_rt_row,
+                &gamescope_rt_badge,
+                runtime.cfg.upscaling.gamescope_enabled,
+                runtime.gamescope_active,
+                turbo_enabled,
+                has_active_game,
+            );
+
+            apply_runtime_feature_status(
+                &wine_fsr_rt_row,
+                &wine_fsr_rt_badge,
+                runtime.cfg.upscaling.wine_fsr_enabled,
+                runtime.wine_fsr_active,
+                turbo_enabled,
+                has_active_game,
+            );
+
+            apply_runtime_feature_status(
+                &vkbasalt_rt_row,
+                &vkbasalt_rt_badge,
+                runtime.cfg.upscaling.vkbasalt_enabled,
+                runtime.vkbasalt_active,
+                turbo_enabled,
+                has_active_game,
+            );
+
+            let fg_enabled = runtime.cfg.frame_gen.enabled
+                && runtime.cfg.frame_gen.backend != bigame_core::models::FrameGenBackend::None;
+            let fg_active = match runtime.cfg.frame_gen.backend {
+                bigame_core::models::FrameGenBackend::OptiScaler => runtime.optiscaler_active,
+                bigame_core::models::FrameGenBackend::Afmf => runtime.afmf_active,
+                bigame_core::models::FrameGenBackend::LsfgVk => runtime.lsfg_active,
+                bigame_core::models::FrameGenBackend::None => false,
+            };
+
+            let snapshot = (
+                turbo_enabled,
+                runtime.gamescope_active,
+                runtime.wine_fsr_active,
+                runtime.vkbasalt_active,
+                fg_active,
+            );
+            if prev_runtime != Some(snapshot) {
+                prev_runtime = Some(snapshot);
+                tracing::info!(
+                    turbo = turbo_enabled,
+                    gamescope = runtime.gamescope_active,
+                    wine_fsr = runtime.wine_fsr_active,
+                    vkbasalt = runtime.vkbasalt_active,
+                    framegen = fg_active,
+                    "dashboard runtime status changed"
+                );
+            }
+
+            apply_runtime_feature_status(
+                &framegen_rt_row,
+                &framegen_rt_badge,
+                fg_enabled,
+                fg_active,
+                turbo_enabled,
+                has_active_game,
+            );
+
+            let fg_conflict = turbo_enabled
+                && has_active_game
+                && runtime.cfg.frame_gen.enabled
+                && ((matches!(
+                    runtime.cfg.frame_gen.backend,
+                    bigame_core::models::FrameGenBackend::OptiScaler
+                        | bigame_core::models::FrameGenBackend::Afmf
+                ) && runtime.lsfg_enabled && runtime.lsfg_active)
+                    || (runtime.cfg.frame_gen.backend
+                        == bigame_core::models::FrameGenBackend::LsfgVk
+                        && runtime.cfg.frame_gen.optiscaler_enabled
+                        && runtime.optiscaler_active));
+            if fg_conflict {
+                framegen_rt_badge.set_text(&i18n("Conflict"));
+                framegen_rt_badge.remove_css_class("success-badge");
+                framegen_rt_badge.remove_css_class("warning-badge");
+                framegen_rt_badge.remove_css_class("dim-label");
+                framegen_rt_badge.add_css_class("error-badge");
+                framegen_rt_row.set_subtitle(&i18n(
+                    "Conflicting frame generation pipelines detected (disable one backend)",
+                ));
+            }
             glib::timeout_future(POLL_INTERVAL).await;
         }
     });
@@ -718,6 +946,306 @@ fn make_dashboard_card(
     (card, val_label, spark)
 }
 
+/// Build a row with a right-side badge used for runtime feature status.
+fn make_runtime_status_row(
+    title: &str,
+    subtitle: &str,
+    badge_text: &str,
+    badge_class: &str,
+) -> (adw::ActionRow, gtk4::Label) {
+    let row = adw::ActionRow::builder()
+        .title(title)
+        .subtitle(subtitle)
+        .build();
+    let badge = gtk4::Label::builder()
+        .label(badge_text)
+        .css_classes([badge_class])
+        .valign(gtk4::Align::Center)
+        .build();
+    row.add_suffix(&badge);
+    (row, badge)
+}
+
+#[derive(Debug, Clone)]
+struct VideoRuntime {
+    cfg: bigame_core::video_config::VideoConfig,
+    lsfg_installed: bool,
+    lsfg_enabled: bool,
+    lsfg_active: bool,
+    gamescope_active: bool,
+    wine_fsr_active: bool,
+    vkbasalt_active: bool,
+    optiscaler_active: bool,
+    afmf_active: bool,
+}
+
+impl Default for VideoRuntime {
+    fn default() -> Self {
+        Self {
+            cfg: bigame_core::video_config::VideoConfig::default(),
+            lsfg_installed: false,
+            lsfg_enabled: false,
+            lsfg_active: false,
+            gamescope_active: false,
+            wine_fsr_active: false,
+            vkbasalt_active: false,
+            optiscaler_active: false,
+            afmf_active: false,
+        }
+    }
+}
+
+/// Collect runtime feature flags for the current game context.
+#[must_use]
+fn collect_video_runtime(active_game: Option<&str>) -> VideoRuntime {
+    let cfg = bigame_core::video_config::load();
+    let lsfg_installed = lsfg_is_installed();
+    let lsfg_enabled = bigame_core::fg::has_any_active_profile();
+    let Some(game) = active_game else {
+        return VideoRuntime {
+            cfg,
+            lsfg_installed,
+            lsfg_enabled,
+            ..VideoRuntime::default()
+        };
+    };
+
+    let pids = find_game_pids(game);
+    let gamescope_active = is_gamescope_running();
+    let wine_fsr_active = pids
+        .iter()
+        .any(|pid| process_env_has_key(*pid, "WINE_FULLSCREEN_FSR"));
+    let vkbasalt_active = pids
+        .iter()
+        .any(|pid| process_env_has_key(*pid, "ENABLE_VKBASALT"));
+    let afmf_active = pids
+        .iter()
+        .any(|pid| process_env_contains(*pid, "RADV_PERFTEST", "afmf"));
+    let lsfg_active = is_lsfg_active_for_game(game);
+    let optiscaler_active = is_optiscaler_active_for_game(game);
+
+    VideoRuntime {
+        cfg,
+        lsfg_installed,
+        lsfg_enabled,
+        lsfg_active,
+        gamescope_active,
+        wine_fsr_active,
+        vkbasalt_active,
+        optiscaler_active,
+        afmf_active,
+    }
+}
+
+/// Build a human-readable diagnostics snapshot for runtime status troubleshooting.
+#[must_use]
+fn build_runtime_diagnostics_report() -> String {
+    let pp = bigame_core::dbus::power_profile_get().unwrap_or_else(|| i18n("Unavailable"));
+    let turbo = pp.eq_ignore_ascii_case("performance");
+    let st = bigame_core::status::read();
+    let active = st
+        .as_ref()
+        .and_then(|s| s.active_profile.clone())
+        .filter(|p| !p.is_empty() && p != "None");
+    let runtime = collect_video_runtime(active.as_deref());
+
+    let backend = match runtime.cfg.frame_gen.backend {
+        bigame_core::models::FrameGenBackend::None => "None",
+        bigame_core::models::FrameGenBackend::OptiScaler => "OptiScaler",
+        bigame_core::models::FrameGenBackend::Afmf => "AFMF",
+        bigame_core::models::FrameGenBackend::LsfgVk => "lsfg-vk",
+    };
+
+    let guidance = if active.is_none() {
+        format!(
+            "\n{guide_title}\n- {g1}\n- {g2}\n- {g3}\n",
+            guide_title = i18n("Troubleshooting"),
+            g1 = i18n("Create profile for the game executable in Dashboard"),
+            g2 = i18n("Launch game from Dashboard button (Gamescope)"),
+            g3 = i18n("Do not launch directly from Steam/Lutris if you need BiGame injections"),
+        )
+    } else {
+        String::new()
+    };
+
+    format!(
+        "{title}\n\n- {pp_k}: {pp}\n- {turbo_k}: {turbo}\n- {game_k}: {game}\n\n{cfg_title}\n- gamescope_enabled: {gs_cfg}\n- wine_fsr_enabled: {wine_cfg}\n- vkbasalt_enabled: {vkb_cfg}\n- framegen_enabled: {fg_cfg}\n- framegen_backend: {backend}\n\n{det_title}\n- gamescope_active: {gs_det}\n- wine_fsr_active: {wine_det}\n- vkbasalt_active: {vkb_det}\n- afmf_active: {afmf_det}\n- optiscaler_staged: {opti_det}\n- lsfg_installed: {lsfg_inst}\n- lsfg_active: {lsfg_det}\n",
+        title = i18n("BiGameMode Runtime Diagnostics"),
+        pp_k = i18n("Power Profile"),
+        pp = pp,
+        turbo_k = i18n("Turbo Mode"),
+        turbo = turbo,
+        game_k = i18n("Active Profile"),
+        game = active.unwrap_or_else(|| i18n("None")),
+        cfg_title = i18n("Configured Features"),
+        gs_cfg = runtime.cfg.upscaling.gamescope_enabled,
+        wine_cfg = runtime.cfg.upscaling.wine_fsr_enabled,
+        vkb_cfg = runtime.cfg.upscaling.vkbasalt_enabled,
+        fg_cfg = runtime.cfg.frame_gen.enabled,
+        backend = backend,
+        det_title = i18n("Detected Runtime Signals"),
+        gs_det = runtime.gamescope_active,
+        wine_det = runtime.wine_fsr_active,
+        vkb_det = runtime.vkbasalt_active,
+        afmf_det = runtime.afmf_active,
+        opti_det = runtime.optiscaler_active,
+        lsfg_inst = runtime.lsfg_installed,
+        lsfg_det = runtime.lsfg_active,
+    ) + &guidance
+}
+
+/// Update feature row + badge based on config/runtime/turbo/game state.
+fn apply_runtime_feature_status(
+    row: &adw::ActionRow,
+    badge: &gtk4::Label,
+    enabled: bool,
+    detected_active: bool,
+    turbo_enabled: bool,
+    has_active_game: bool,
+) {
+    if !enabled {
+        badge.set_text(&i18n("Off"));
+        badge.remove_css_class("success-badge");
+        badge.remove_css_class("warning-badge");
+        badge.remove_css_class("error-badge");
+        badge.add_css_class("dim-label");
+        row.set_subtitle(&i18n("Disabled in settings"));
+        return;
+    }
+    if !turbo_enabled {
+        badge.set_text(&i18n("Blocked"));
+        badge.remove_css_class("success-badge");
+        badge.remove_css_class("dim-label");
+        badge.remove_css_class("error-badge");
+        badge.add_css_class("warning-badge");
+        row.set_subtitle(&i18n("Requires Turbo Mode (Booster)"));
+        return;
+    }
+    if !has_active_game {
+        badge.set_text(&i18n("Waiting"));
+        badge.remove_css_class("success-badge");
+        badge.remove_css_class("warning-badge");
+        badge.remove_css_class("error-badge");
+        badge.add_css_class("dim-label");
+        row.set_subtitle(&i18n("No active game profile"));
+        return;
+    }
+    if detected_active {
+        badge.set_text(&i18n("Active"));
+        badge.remove_css_class("warning-badge");
+        badge.remove_css_class("dim-label");
+        badge.remove_css_class("error-badge");
+        badge.add_css_class("success-badge");
+        row.set_subtitle(&i18n("Detected during current game"));
+    } else {
+        badge.set_text(&i18n("Pending"));
+        badge.remove_css_class("success-badge");
+        badge.remove_css_class("dim-label");
+        badge.remove_css_class("error-badge");
+        badge.add_css_class("warning-badge");
+        row.set_subtitle(&i18n("Enabled but not detected in game process"));
+    }
+}
+
+#[must_use]
+fn find_game_pids(game_name: &str) -> Vec<u32> {
+    let Ok(out) = std::process::Command::new("pgrep").arg("-f").arg(game_name).output() else {
+        return Vec::new();
+    };
+    String::from_utf8_lossy(&out.stdout)
+        .split_whitespace()
+        .filter_map(|s| s.parse::<u32>().ok())
+        .collect()
+}
+
+#[must_use]
+fn process_env_has_key(pid: u32, key: &str) -> bool {
+    let path = format!("/proc/{pid}/environ");
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    bytes
+        .split(|b| *b == 0)
+        .filter_map(|entry| std::str::from_utf8(entry).ok())
+        .any(|s| s.starts_with(&format!("{key}=")))
+}
+
+#[must_use]
+fn process_env_contains(pid: u32, key: &str, needle: &str) -> bool {
+    let path = format!("/proc/{pid}/environ");
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    bytes
+        .split(|b| *b == 0)
+        .filter_map(|entry| std::str::from_utf8(entry).ok())
+        .find_map(|s| s.strip_prefix(&format!("{key}=")))
+        .is_some_and(|v| v.contains(needle))
+}
+
+#[must_use]
+fn is_gamescope_running() -> bool {
+    std::process::Command::new("pgrep")
+    .arg("-f")
+    .arg("gamescope")
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+#[must_use]
+fn is_lsfg_active_for_game(game_name: &str) -> bool {
+    let Ok(out) = std::process::Command::new("pgrep")
+        .arg("-f")
+        .arg(game_name)
+        .output()
+    else {
+        return false;
+    };
+    for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
+        let map_path = format!("/proc/{pid_str}/maps");
+        if let Ok(status) = std::process::Command::new("timeout")
+            .args([
+                "0.2",
+                "grep",
+                "-qE",
+                "liblsfg-vk.so|VK_LAYER_LSFGVK|lsfg-vk",
+                &map_path,
+            ])
+            .status()
+        {
+            if status.success() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+#[must_use]
+fn is_optiscaler_active_for_game(game_name: &str) -> bool {
+    let Ok(out) = std::process::Command::new("pgrep")
+        .arg("-f")
+        .arg(game_name)
+        .output()
+    else {
+        return false;
+    };
+
+    for pid_str in String::from_utf8_lossy(&out.stdout).split_whitespace() {
+        let map_path = format!("/proc/{pid_str}/maps");
+        if let Ok(status) = std::process::Command::new("timeout")
+            .args(["0.2", "grep", "-qE", "nvngx\\.dll|_nvngx\\.dll|OptiScaler", &map_path])
+            .status()
+        {
+            if status.success() {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
 /// Check whether the lsfg-vk Vulkan implicit layer is installed.
 fn lsfg_is_installed() -> bool {
     const LAYER_PATHS: &[&str] = &[
@@ -834,6 +1362,11 @@ fn make_troubleshoot_row(
 fn build_games_group() -> adw::PreferencesGroup {
     let group = adw::PreferencesGroup::new();
     group.set_title(&i18n("Detected Games"));
+
+    // Guided onboarding: mirrors the Profiles "Create with Wizard" entry point.
+    let onboarding = build_games_onboarding_row();
+    group.add(&onboarding);
+
     populate_games_rows(&group);
 
     let refresh_btn = gtk4::Button::builder()
@@ -862,6 +1395,253 @@ fn build_games_group() -> adw::PreferencesGroup {
     });
     group.set_header_suffix(Some(&refresh_btn));
     group
+}
+
+/// Build a step-by-step helper row for first-time setup in Dashboard.
+fn build_games_onboarding_row() -> adw::ExpanderRow {
+    let row = adw::ExpanderRow::builder()
+        .title(i18n("Setup Assistant (step-by-step)"))
+        .subtitle(i18n("Recommended flow to make Turbo features work in-game"))
+        .build();
+
+    let s1 = adw::ActionRow::builder()
+        .title(i18n("1. Create profile with Wizard"))
+        .subtitle(i18n("Use guided setup to create game profile safely"))
+        .build();
+    let wizard_btn = gtk4::Button::builder()
+        .label(i18n("Create with Wizard (guided)"))
+        .css_classes(["suggested-action"])
+        .valign(gtk4::Align::Center)
+        .build();
+    wizard_btn.connect_clicked(move |btn| {
+        let btn_ref = btn.clone();
+        crate::views::profile_wizard::open(btn, move |_profile| {
+            crate::widgets::toast::show(&btn_ref, &i18n("Profile created"));
+            refresh_detected_games_group(&btn_ref);
+        });
+    });
+    s1.add_suffix(&wizard_btn);
+    row.add_row(&s1);
+
+    let s2 = adw::ActionRow::builder()
+        .title(i18n("2. Enable Turbo + Video features"))
+        .subtitle(i18n("Turbo Mode must be active to apply Gamescope/FSR/vkBasalt/FrameGen"))
+        .build();
+    row.add_row(&s2);
+
+    let s3 = adw::ActionRow::builder()
+        .title(i18n("3. Launch from Dashboard"))
+        .subtitle(i18n("Use 'Launch (Turbo)' for BiGameMode injections"))
+        .build();
+    row.add_row(&s3);
+
+    let s4 = adw::ActionRow::builder()
+        .title(i18n("4. Validate Runtime Status"))
+        .subtitle(i18n("Check Video Runtime Status and Active Profile during gameplay"))
+        .build();
+    row.add_row(&s4);
+
+    row
+}
+
+/// Rebuild only the "Detected Games" group in-place.
+fn refresh_detected_games_group(trigger: &impl IsA<gtk4::Widget>) {
+    let Some(old_group_w) = trigger.ancestor(adw::PreferencesGroup::static_type()) else {
+        return;
+    };
+    let Ok(old_group) = old_group_w.downcast::<adw::PreferencesGroup>() else {
+        return;
+    };
+    let Some(parent_widget) = old_group.parent() else {
+        return;
+    };
+    let Ok(page) = parent_widget.downcast::<adw::PreferencesPage>() else {
+        return;
+    };
+    old_group.unparent();
+    page.add(&build_games_group());
+}
+
+/// Resolve how a detected game should be launched.
+///
+/// Returns `(program, args)`:
+/// - Steam: `("steam", ["-applaunch", "<appid>"])`
+/// - Others: `(executable, [])` (direct process launch)
+#[must_use]
+fn resolve_launch_command(source: &str, executable: &str) -> (String, Vec<String>) {
+    if source == "Steam" {
+        if let Some(appid) = find_steam_appid_by_installdir(executable) {
+            return (
+                "steam".to_string(),
+                vec!["-applaunch".to_string(), appid],
+            );
+        }
+        tracing::warn!(
+            source = %source,
+            executable = %executable,
+            "steam appid not found by installdir; falling back to direct launch"
+        );
+    }
+    (executable.to_string(), Vec::new())
+}
+
+/// Search Steam appmanifest files and return appid for matching `installdir`.
+#[must_use]
+fn find_steam_appid_by_installdir(installdir: &str) -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let steam_dirs = [
+        std::path::Path::new(&home).join(".steam/steam/steamapps"),
+        std::path::Path::new(&home).join(".local/share/Steam/steamapps"),
+    ];
+
+    for dir in steam_dirs {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let is_manifest = path
+                .file_name()
+                .is_some_and(|n| n.to_string_lossy().starts_with("appmanifest_"));
+            if !is_manifest {
+                continue;
+            }
+            let Ok(content) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            let mut appid: Option<String> = None;
+            let mut dir_name: Option<String> = None;
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("\"appid\"") {
+                    let parts: Vec<&str> = trimmed.split('"').collect();
+                    if parts.len() >= 4 {
+                        appid = Some(parts[3].to_string());
+                    }
+                }
+                if trimmed.starts_with("\"installdir\"") {
+                    let parts: Vec<&str> = trimmed.split('"').collect();
+                    if parts.len() >= 4 {
+                        dir_name = Some(parts[3].to_string());
+                    }
+                }
+            }
+            if dir_name.as_deref() == Some(installdir) {
+                if let Some(id) = appid {
+                    return Some(id);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Suggest the best profile process name for a detected game.
+///
+/// For Steam titles, attempts to infer the real `.exe` from install directory,
+/// because profile names based on installdir often end up matching generic
+/// Proton helper processes.
+#[must_use]
+fn suggest_profile_program_name(game: &bigame_core::games::DetectedGame) -> String {
+    if game.source == "Steam" {
+        if let Some(root) = game.install_path.as_deref() {
+            if let Some(exe) = guess_primary_windows_exe(root) {
+                return exe;
+            }
+        }
+    }
+    game.executable.clone()
+}
+
+/// Guess main Windows executable by scanning install directory.
+#[must_use]
+fn guess_primary_windows_exe(root: &std::path::Path) -> Option<String> {
+    if !root.exists() {
+        return None;
+    }
+
+    const MAX_DEPTH: usize = 4;
+    const MAX_FILES: usize = 3000;
+    const COMMON_WRAPPERS: &[&str] = &[
+        "steam.exe",
+        "steamwebhelper.exe",
+        "proton.exe",
+        "wineboot.exe",
+        "services.exe",
+        "winedevice.exe",
+        "explorer.exe",
+        "crashpad_handler.exe",
+        "easyanticheat.exe",
+        "eac_launcher.exe",
+        "launcher.exe",
+        "unins000.exe",
+    ];
+
+    let mut stack = vec![(root.to_path_buf(), 0usize)];
+    let mut seen = 0usize;
+    let mut best: Option<(String, u64, i32)> = None;
+
+    while let Some((dir, depth)) = stack.pop() {
+        if depth > MAX_DEPTH || seen > MAX_FILES {
+            continue;
+        }
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            if seen > MAX_FILES {
+                break;
+            }
+            seen += 1;
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push((path, depth + 1));
+                continue;
+            }
+            let ext = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|s| s.to_ascii_lowercase())
+                .unwrap_or_default();
+            if ext != "exe" {
+                continue;
+            }
+
+            let file_name = match path.file_name().and_then(|n| n.to_str()) {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            let lower = file_name.to_ascii_lowercase();
+            if COMMON_WRAPPERS.iter().any(|w| *w == lower) {
+                continue;
+            }
+
+            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+            let mut score = 0i32;
+            let p = path.to_string_lossy().to_ascii_lowercase();
+            if p.contains("win64") || p.contains("binaries") {
+                score += 10;
+            }
+            if p.contains("shipping") {
+                score += 8;
+            }
+            if p.contains("/bin") {
+                score += 4;
+            }
+
+            match &best {
+                None => best = Some((file_name, size, score)),
+                Some((_name, best_size, best_score)) => {
+                    if score > *best_score || (score == *best_score && size > *best_size) {
+                        best = Some((file_name, size, score));
+                    }
+                }
+            }
+        }
+    }
+
+    best.map(|(name, _, _)| name)
 }
 
 /// Populate game rows into a `PreferencesGroup` (called by `build_games_group`).
@@ -894,47 +1674,114 @@ fn populate_games_rows(group: &adw::PreferencesGroup) {
             row.add_suffix(&badge);
         } else {
             let btn = gtk4::Button::builder()
-                .icon_name("list-add-symbolic")
-                .tooltip_text(i18n("Create Profile"))
+                .label(i18n("Create with Wizard (guided)"))
+                .tooltip_text(i18n("Open guided profile setup"))
                 .valign(gtk4::Align::Center)
-                .css_classes(["flat"])
+                .css_classes(["pill", "flat"])
                 .build();
-            let exe = game.executable.clone();
+            let suggested_profile = suggest_profile_program_name(game);
+            let game_name = game.name.clone();
             btn.connect_clicked(move |b| {
-                let profile = bigame_core::profiles::GameProfile {
-                    name: exe.clone(),
-                    ..Default::default()
-                };
                 let btn_ref = b.clone();
-                gtk4::glib::spawn_future_local(async move {
-                    if let Err(e) = bigame_core::profiles::save(&profile).await {
-                        tracing::warn!("Failed to create profile: {e}");
-                    } else {
-                        crate::widgets::toast::show(&btn_ref, &i18n("Profile created"));
-                        btn_ref.set_sensitive(false);
-                    }
+                let game_name_for_log = game_name.clone();
+                let exe_for_wizard = suggested_profile.clone();
+                tracing::info!(
+                    game = %game_name_for_log,
+                    executable = %exe_for_wizard,
+                    "dashboard create-profile wizard opened"
+                );
+                crate::views::profile_wizard::open_with_suggested_name(b, &exe_for_wizard, move |_profile| {
+                    tracing::info!(
+                        game = %game_name_for_log,
+                        "dashboard create-profile wizard saved"
+                    );
+                    crate::widgets::toast::show(&btn_ref, &i18n("Profile created"));
+                    refresh_detected_games_group(&btn_ref);
                 });
             });
             row.add_suffix(&btn);
         }
 
-        // Gamescope launch button
+        // Gamescope launch button — uses launcher::LaunchPlan to apply
+        // VideoConfig (upscaling filter, Wine FSR, vkBasalt, frame gen env vars)
+        // on top of per-game profile gamescope settings. OptiScaler DLLs are
+        // staged into the game directory when configured and install path is known.
         let gs_btn = gtk4::Button::builder()
-            .icon_name("preferences-desktop-display-symbolic")
-            .tooltip_text(i18n("Launch with Gamescope"))
+            .label(i18n("Launch (Turbo)"))
+            .tooltip_text(i18n("Launch game with BiGameMode video features"))
             .valign(gtk4::Align::Center)
-            .css_classes(["flat"])
+            .css_classes(["suggested-action"])
             .build();
         let exe = game.executable.clone();
+        let source = game.source;
+        let game_name = game.name.clone();
+        let install_path = game.install_path.clone();
         gs_btn.connect_clicked(move |b| {
-            let config = bigame_core::profiles::load(&exe)
+            let gs_cfg = bigame_core::profiles::load(&exe)
                 .ok()
-                .and_then(|p| p.gamescope)
-                .unwrap_or_default();
-            let cmd = exe.clone();
+                .and_then(|p| p.gamescope);
             let btn_ref = b.clone();
-            gio::spawn_blocking(move || bigame_core::gamescope::launch(&config, &cmd, &[]));
-            crate::widgets::toast::show(&btn_ref, &i18n("Launching with Gamescope…"));
+            let game_dir = install_path.clone();
+            let exe_for_launch = exe.clone();
+            let game_name_for_launch = game_name.clone();
+            let game_name_for_result = game_name.clone();
+            gtk4::glib::spawn_future_local(async move {
+                let result = gio::spawn_blocking(move || {
+                    let (launch_program, launch_args) =
+                        resolve_launch_command(source, &exe_for_launch);
+
+                    tracing::info!(
+                        game = %game_name_for_launch,
+                        source = %source,
+                        profile = %exe_for_launch,
+                        launch_program = %launch_program,
+                        launch_args = ?launch_args,
+                        "dashboard launch requested"
+                    );
+
+                    let video = bigame_core::video_config::load();
+                    // For Steam applaunch path we avoid invasive staging to keep launch stable.
+                    if launch_program != "steam" {
+                        bigame_core::launcher::maybe_stage_optiscaler(
+                            &video.frame_gen,
+                            game_dir.as_deref(),
+                        );
+                    }
+
+                    bigame_core::launcher::LaunchPlan::build_with_args_for_game(
+                        &launch_program,
+                        &launch_args,
+                        &exe_for_launch,
+                        &video,
+                        gs_cfg.as_ref(),
+                    )
+                    .spawn()
+                    .map(|_| ())
+                    .map_err(|e| anyhow::anyhow!(e))
+                })
+                .await;
+
+                match result {
+                    Ok(Ok(())) => {
+                        tracing::info!(game = %game_name_for_result, "dashboard launch succeeded");
+                        crate::widgets::toast::show(&btn_ref, &i18n("Launch command sent"));
+                    }
+                    Ok(Err(e)) => {
+                        tracing::error!(game = %game_name_for_result, error = %e, "dashboard launch failed");
+                        crate::widgets::toast::show(
+                            &btn_ref,
+                            &i18n("Launch failed. Open terminal logs / Runtime Diagnostics."),
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(game = %game_name_for_result, error = ?e, "dashboard launch task failed");
+                        crate::widgets::toast::show(
+                            &btn_ref,
+                            &i18n("Launch task failed. Open terminal logs / Runtime Diagnostics."),
+                        );
+                    }
+                }
+            });
         });
         row.add_suffix(&gs_btn);
 

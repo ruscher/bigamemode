@@ -138,11 +138,22 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         bigame_core::fg::read_profile(initial_target)
     };
 
+    let init_enabled = init_mult > 1;
+
+    // ── Explicit ON/OFF switch for LSFG generation ─────────────────────────
+    let enabled_row = adw::SwitchRow::builder()
+        .title(i18n("Enable LSFG Frame Generation"))
+        .subtitle(i18n("When disabled, multiplier is forced to 1x"))
+        .active(init_enabled)
+        .sensitive(is_sensitive)
+        .build();
+    group.add(&enabled_row);
+
     // ── Multiplier Slider (1–20x) ─────────────────────────────────────────
     let multiplier_row = adw::ActionRow::builder()
         .title(i18n("Multiplier"))
         .subtitle(i18n("Frames generated per real frame (1-20x)"))
-        .sensitive(is_sensitive)
+        .sensitive(is_sensitive && init_enabled)
         .build();
 
     let adj = gtk4::Adjustment::new(f64::from(init_mult), 1.0, 20.0, 1.0, 5.0, 0.0);
@@ -168,7 +179,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         .subtitle(i18n(
             "Motion estimation resolution (25–100%). Lower = faster.",
         ))
-        .sensitive(is_sensitive)
+        .sensitive(is_sensitive && init_enabled)
         .build();
 
     let flow_adj = gtk4::Adjustment::new(f64::from(init_flow), 25.0, 100.0, 1.0, 10.0, 0.0);
@@ -192,7 +203,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     let perf_row = adw::SwitchRow::builder()
         .title(i18n("Performance Mode"))
         .active(init_perf)
-        .sensitive(is_sensitive)
+        .sensitive(is_sensitive && init_enabled)
         .build();
     group.add(&perf_row);
 
@@ -200,7 +211,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     let hdr_row = adw::SwitchRow::builder()
         .title(i18n("HDR Mode"))
         .active(init_hdr)
-        .sensitive(is_sensitive)
+        .sensitive(is_sensitive && init_enabled)
         .build();
     group.add(&hdr_row);
 
@@ -214,7 +225,7 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
     let present_row = adw::ComboRow::builder()
         .title(i18n("Present Mode"))
         .model(&present_model)
-        .sensitive(is_sensitive)
+        .sensitive(is_sensitive && init_enabled)
         .build();
     present_row.set_selected(init_present);
     group.add(&present_row);
@@ -224,6 +235,9 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         let is_updating = Rc::new(Cell::new(false));
 
         let tm_clone = target_model.clone();
+        let enabled_upd = enabled_row.clone();
+        let multiplier_row_upd = multiplier_row.clone();
+        let flow_row_upd = flow_row.clone();
         let scale_upd = scale.clone();
         let flow_upd = flow_scale.clone();
         let perf_upd = perf_row.clone();
@@ -234,23 +248,34 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
         target_row.connect_selected_notify(move |r| {
             if let Some(target) = tm_clone.string(r.selected()) {
                 let (m, f, p, h, pm) = bigame_core::fg::read_profile(&target);
+                let enabled = m > 1;
                 is_upd.set(true);
+                enabled_upd.set_active(enabled);
+                multiplier_row_upd.set_sensitive(enabled);
+                flow_row_upd.set_sensitive(enabled);
                 scale_upd.set_value(f64::from(m));
                 flow_upd.set_value(f64::from(f));
                 perf_upd.set_active(p);
                 hdr_upd.set_active(h);
                 pres_upd.set_selected(pm);
+                perf_upd.set_sensitive(enabled);
+                hdr_upd.set_sensitive(enabled);
+                pres_upd.set_sensitive(enabled);
                 is_upd.set(false);
             }
         });
 
         let tm_save = target_model.clone();
         let t_row = target_row.clone();
+        let enabled_ref = enabled_row.clone();
+        let multiplier_row_ref = multiplier_row.clone();
+        let flow_row_ref = flow_row.clone();
         let scale_ref = scale.clone();
         let flow_ref = flow_scale.clone();
         let perf_ref = perf_row.clone();
         let hdr_ref = hdr_row.clone();
         let pres_ref = present_row.clone();
+        let target_row_for_toast = target_row.clone();
         let is_upd_save = is_updating.clone();
 
         let save_fn = Rc::new({
@@ -261,14 +286,91 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
                 }
                 if let Some(target) = tm_save.string(t_row.selected()) {
                     let name_str = target.to_string();
-                    let mult = scale_ref.value() as u32;
+                    let mut mult = scale_ref.value() as u32;
                     let flow = flow_ref.value() as u32;
                     let perf = perf_ref.is_active();
                     let hdr = hdr_ref.is_active();
                     let pres = pres_ref.selected();
 
+                    if !enabled_ref.is_active() {
+                        mult = 1;
+                    } else if mult < 2 {
+                        mult = 2;
+                        is_upd_save.set(true);
+                        scale_ref.set_value(2.0);
+                        is_upd_save.set(false);
+                    }
+
+                    let controls_enabled = mult > 1;
+                    multiplier_row_ref.set_sensitive(controls_enabled);
+                    flow_row_ref.set_sensitive(controls_enabled);
+                    perf_ref.set_sensitive(controls_enabled);
+                    hdr_ref.set_sensitive(controls_enabled);
+                    pres_ref.set_sensitive(controls_enabled);
+
+                    if mult > 1 && !bigame_core::fg::is_lossless_dll_ready() {
+                        crate::widgets::toast::show(
+                            &target_row_for_toast,
+                            &i18n("LSFG-VK requires a valid Lossless.dll path"),
+                        );
+                        // Revert to disabled state (1x) when dependency is missing.
+                        is_upd_save.set(true);
+                        scale_ref.set_value(1.0);
+                        is_upd_save.set(false);
+                        let _ = bigame_core::fg::write_profile(
+                            &name_str,
+                            1,
+                            flow,
+                            perf,
+                            hdr,
+                            pres,
+                        );
+                        return;
+                    }
+
+                    // Cross-tab mutual exclusion: if LSFG is enabled in Tuning,
+                    // disable OptiScaler path from Video settings to avoid conflicts.
+                    if mult > 1 {
+                        let mut vcfg = bigame_core::video_config::load();
+                        let mut changed = false;
+                        if vcfg.frame_gen.optiscaler_enabled {
+                            vcfg.frame_gen.optiscaler_enabled = false;
+                            changed = true;
+                        }
+                        if vcfg.frame_gen.backend
+                            == bigame_core::models::FrameGenBackend::OptiScaler
+                        {
+                            vcfg.frame_gen.backend = bigame_core::models::FrameGenBackend::LsfgVk;
+                            changed = true;
+                        }
+                        if changed {
+                            if let Err(e) = bigame_core::video_config::save(&vcfg) {
+                                tracing::warn!(
+                                    "failed to persist LSFG/OptiScaler mutual exclusion: {e:#}"
+                                );
+                            } else {
+                                crate::widgets::toast::show(
+                                    &target_row_for_toast,
+                                    &i18n("OptiScaler disabled automatically (LSFG enabled in Tuning)"),
+                                );
+                                tracing::info!(
+                                    profile = %name_str,
+                                    "mutual exclusion applied: LSFG enabled -> OptiScaler disabled"
+                                );
+                            }
+                        }
+                    }
+
                     // 1. Write to lsfg-vk TOML for real-time application
-                    let _ = bigame_core::fg::write_profile(&name_str, mult, flow, perf, hdr, pres);
+                    if let Err(e) =
+                        bigame_core::fg::write_profile(&name_str, mult, flow, perf, hdr, pres)
+                    {
+                        tracing::warn!("failed to write lsfg profile: {e:#}");
+                        crate::widgets::toast::show(
+                            &target_row_for_toast,
+                            &format!("{}: {}", i18n("LSFG write failed"), e),
+                        );
+                    }
 
                     // 2. Debounce writing to bigame GameProfile (persists for next launch and triggers falcond)
                     if let Some(task) = debounce_task.take() {
@@ -298,6 +400,9 @@ You must legally acquire Lossless Scaling on Steam or other platforms to obtain 
 
         let s1 = save_fn.clone();
         scale.connect_value_changed(move |_| s1());
+
+        let s0 = save_fn.clone();
+        enabled_row.connect_active_notify(move |_| s0());
 
         let s2 = save_fn.clone();
         flow_scale.connect_value_changed(move |_| s2());

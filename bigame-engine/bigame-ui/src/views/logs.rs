@@ -273,7 +273,7 @@ fn load_kernel(text_view: &gtk4::TextView) {
                 Ok(out) => {
                     let stdout = String::from_utf8_lossy(&out.stdout);
                     let keywords = ["amdgpu", "radeon", "nvidia", "gpu", "drm", "vulkan",
-                                    "gamemode", "sched_ext", "scx_", "vcache"];
+                                    "sched_ext", "scx_", "vcache"];
 
                     let filtered: Vec<&str> = stdout
                         .lines()

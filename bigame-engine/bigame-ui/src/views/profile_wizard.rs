@@ -29,6 +29,23 @@ const STEP_IDS: &[&str; STEPS] = &[
 
 /// Open the wizard dialog attached to `parent`.
 pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 'static) {
+    open_internal(parent, None, on_saved);
+}
+
+/// Open the wizard with a pre-filled suggested program name.
+pub fn open_with_suggested_name(
+    parent: &impl IsA<gtk4::Widget>,
+    suggested_name: &str,
+    on_saved: impl Fn(GameProfile) + 'static,
+) {
+    open_internal(parent, Some(suggested_name.to_string()), on_saved);
+}
+
+fn open_internal(
+    parent: &impl IsA<gtk4::Widget>,
+    suggested_name: Option<String>,
+    on_saved: impl Fn(GameProfile) + 'static,
+) {
     let profile = Rc::new(RefCell::new(GameProfile::default()));
     let current = Rc::new(RefCell::new(0usize));
     let on_saved_cb = Rc::new(on_saved);
@@ -69,6 +86,9 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
     let name_entry = adw::EntryRow::builder()
         .title(i18n("Program name (what you see in Task Manager)"))
         .build();
+    if let Some(name) = suggested_name.as_deref() {
+        name_entry.set_text(name);
+    }
     let name_group = adw::PreferencesGroup::new();
     name_group.add_css_class("wizard-input-card");
     name_group.add(&name_entry);
@@ -497,8 +517,10 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
                 let on_saved_final = on_saved_ref.clone();
 
                 gtk4::glib::spawn_future_local(async move {
+                    tracing::info!(profile = %p_clone.name, "wizard save requested");
                     match bigame_core::profiles::save(&p_clone).await {
                         Ok(_) => {
+                            tracing::info!(profile = %p_clone.name, "wizard save succeeded");
                             on_saved_final(p_clone.clone());
                             dialog_ref.close();
                         }
@@ -506,7 +528,11 @@ pub fn open(parent: &impl IsA<gtk4::Widget>, on_saved: impl Fn(GameProfile) + 's
                             tracing::error!("Wizard save failed: {e}");
                             crate::widgets::toast::show(
                                 &next_btn_ref,
-                                &i18n("Save failed. Did you cancel?"),
+                                &format!(
+                                    "{}: {}",
+                                    i18n("Save failed. Check terminal logs."),
+                                    e
+                                ),
                             );
                             next_btn_ref.set_sensitive(true);
                             next_btn_ref.set_label(&i18n("Save Profile"));

@@ -2,7 +2,7 @@
 
 pkgname=bigame-mode
 pkgdesc="Gaming performance orchestration for BigLinux (Libadwaita UI + falcond backend)"
-pkgver=0.1.0
+pkgver=1.0.0
 pkgrel=1
 arch=('x86_64')
 url="https://github.com/ruscher/bigamemode"
@@ -10,9 +10,9 @@ license=('GPL-3.0-or-later')
 depends=(
     'gtk4'
     'libadwaita'
-    'dbus'
-    'polkit'
-    'gettext'
+    'glib2'
+    'falcond'
+    'lsfg-vk'
 )
 makedepends=(
     'rust'
@@ -20,7 +20,6 @@ makedepends=(
     'gettext'
 )
 optdepends=(
-    'falcond: daemon for automatic game profile switching'
     'scx-scheds: Sched-ext schedulers for gaming performance'
     'gamemode: GameMode D-Bus service'
     'power-profiles-daemon: PowerProfiles D-Bus backend'
@@ -33,12 +32,14 @@ md5sums=('SKIP')
 prepare() {
     cd "${srcdir}/${pkgname}"
     export CARGO_HOME="${srcdir}/cargo-home"
+    export RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }--remap-path-prefix=${srcdir}=."
     cargo fetch --locked --manifest-path bigame-engine/Cargo.toml
 }
 
 build() {
     cd "${srcdir}/${pkgname}"
     export CARGO_HOME="${srcdir}/cargo-home"
+    export RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }--remap-path-prefix=${srcdir}=."
     # Build the full workspace (bigame-ui and bigame-daemon)
     cargo build --release --locked --manifest-path bigame-engine/Cargo.toml
 
@@ -82,15 +83,16 @@ build() {
 check() {
     cd "${srcdir}/${pkgname}"
     export CARGO_HOME="${srcdir}/cargo-home"
+    export RUSTFLAGS="${RUSTFLAGS:+${RUSTFLAGS} }--remap-path-prefix=${srcdir}=."
     cargo test --release --locked --manifest-path bigame-engine/Cargo.toml
 }
 
 package() {
     cd "${srcdir}/${pkgname}"
 
-    # bigame-ui binary
+    # bigame-ui binary / matches desktop launcher Exec key
     install -Dm755 "bigame-engine/target/release/bigame-ui" \
-        "${pkgdir}/usr/bin/bigame-mode"
+        "${pkgdir}/usr/bin/bigame-ui"
 
     # bigame-daemon binary
     install -Dm755 "bigame-engine/target/release/bigame-daemon" \
@@ -115,12 +117,8 @@ package() {
     # D-Bus policies
     install -Dm644 "data/com.biglinux.BiGameMode.conf" \
         "${pkgdir}/usr/share/dbus-1/system.d/com.biglinux.BiGameMode.conf"
-    install -Dm644 "data/org.falcond.conf" \
-        "${pkgdir}/usr/share/dbus-1/system.d/org.falcond.conf"
 
     # Systemd services
-    install -Dm644 "data/falcond.service" \
-        "${pkgdir}/usr/lib/systemd/system/falcond.service"
     install -Dm644 "data/bigame-daemon.service" \
         "${pkgdir}/usr/lib/systemd/system/bigame-daemon.service"
 
@@ -128,32 +126,10 @@ package() {
     install -Dm644 "data/com.biglinux.BiGameMode.service" \
         "${pkgdir}/usr/share/dbus-1/system-services/com.biglinux.BiGameMode.service"
 
-    # Sysusers
-    install -Dm644 "data/falcond.sysusers" \
-        "${pkgdir}/usr/lib/sysusers.d/falcond.conf"
-
-    # Default falcond configuration
-    install -Dm644 "data/falcond.conf" \
-        "${pkgdir}/etc/falcond/falcond.conf"
-
     # Icon
     install -Dm644 "data/icons/com.biglinux.BiGameMode.svg" \
         "${pkgdir}/usr/share/icons/hicolor/scalable/apps/com.biglinux.BiGameMode.svg"
 
-    # Translations
-    for po in locale/*.po; do
-        lang=$(basename "${po}" .po)
-        if [ -f "locale/${lang}/LC_MESSAGES/${pkgname}.mo" ]; then
-            install -Dm644 "locale/${lang}/LC_MESSAGES/${pkgname}.mo" \
-                "${pkgdir}/usr/share/locale/${lang}/LC_MESSAGES/${pkgname}.mo"
-        fi
-    done
-
     # License
     install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
-
-    # Sudoers: NOPASSWD rules so bigame-mode never prompts for password
-    # when writing falcond config, profiles, or VCache sysfs settings.
-    install -Dm440 "data/bigame-mode-sudoers" \
-        "${pkgdir}/etc/sudoers.d/bigame-mode"
 }

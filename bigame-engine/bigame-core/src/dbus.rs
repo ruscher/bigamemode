@@ -1,4 +1,4 @@
-//! D-Bus integration with `GameMode` and `PowerProfiles` daemons.
+//! D-Bus integration with `PowerProfiles` and falcond status daemons.
 
 #![allow(clippy::missing_errors_doc)]
 
@@ -7,94 +7,16 @@ use std::sync::OnceLock;
 /// Cached system bus connection (for `PowerProfiles`).
 static SYSTEM_CONN: OnceLock<Option<zbus::blocking::Connection>> = OnceLock::new();
 
-/// Cached session bus connection (for `GameMode`).
-static SESSION_CONN: OnceLock<Option<zbus::blocking::Connection>> = OnceLock::new();
-
-fn session_conn() -> Option<&'static zbus::blocking::Connection> {
-    SESSION_CONN
-        .get_or_init(|| zbus::blocking::Connection::session().ok())
-        .as_ref()
-}
-
 fn system_conn() -> Option<&'static zbus::blocking::Connection> {
     SYSTEM_CONN
         .get_or_init(|| zbus::blocking::Connection::system().ok())
         .as_ref()
 }
 
-// ── GameMode ────────────────────────────────────────────────────────────────
-
-/// Proxy for the `GameMode` D-Bus interface.
-///
-/// `GameMode` provides system-wide performance optimizations
-/// when games are running (Feral Interactive).
-#[zbus::proxy(
-    interface = "com.feralinteractive.GameMode",
-    default_service = "com.feralinteractive.GameMode",
-    default_path = "/com/feralinteractive/GameMode"
-)]
-trait GameMode {
-    /// Register a game process for optimization.
-    fn register_game(&self, pid: i32) -> zbus::Result<i32>;
-
-    /// Unregister a game process.
-    fn unregister_game(&self, pid: i32) -> zbus::Result<i32>;
-
-    /// Query number of active registered games.
-    fn query_status(&self) -> zbus::Result<i32>;
-}
-
-/// Query `GameMode` active game count (synchronous / blocking).
-///
-/// Caches the D-Bus session connection for reuse across calls.
-/// Returns 0 if `GameMode` daemon is unavailable.
-#[must_use]
-pub fn gamemode_active_count() -> i32 {
-    let Some(conn) = session_conn() else {
-        return 0;
-    };
-    GameModeProxyBlocking::new(conn)
-        .ok()
-        .and_then(|p| p.query_status().ok())
-        .unwrap_or(0)
-}
-
 /// Check if falcond service is running by looking for its status file.
 #[must_use]
 pub fn falcond_is_running() -> bool {
     std::path::Path::new(crate::status::STATUS_PATH).exists()
-}
-
-/// Register the current process in `GameMode` for performance optimizations.
-///
-/// Returns `true` if registration succeeded.
-#[must_use]
-pub fn gamemode_register() -> bool {
-    let Some(conn) = session_conn() else {
-        return false;
-    };
-    #[allow(clippy::cast_possible_wrap)]
-    let pid = std::process::id() as i32;
-    GameModeProxyBlocking::new(conn)
-        .ok()
-        .and_then(|p| p.register_game(pid).ok())
-        .is_some_and(|r| r == 0)
-}
-
-/// Unregister the current process from `GameMode`.
-///
-/// Returns `true` if unregistration succeeded.
-#[must_use]
-pub fn gamemode_unregister() -> bool {
-    let Some(conn) = session_conn() else {
-        return false;
-    };
-    #[allow(clippy::cast_possible_wrap)]
-    let pid = std::process::id() as i32;
-    GameModeProxyBlocking::new(conn)
-        .ok()
-        .and_then(|p| p.unregister_game(pid).ok())
-        .is_some_and(|r| r == 0)
 }
 
 // ── PowerProfiles ───────────────────────────────────────────────────────────

@@ -70,6 +70,16 @@ fn build_list_page(nav_view: &adw::NavigationView) -> adw::NavigationPage {
         });
     }
 
+    // Keep list synced with external changes (wizard from Dashboard, daemon saves).
+    {
+        let lb = list_box.clone();
+        let nav_ref = nav_view.clone();
+        glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+            refresh_profile_list(&lb, &nav_ref);
+            glib::ControlFlow::Continue
+        });
+    }
+
     page.add(&group);
 
     // "New Profile" → empty detail page
@@ -901,15 +911,14 @@ fn build_detail_page_for(profile: &GameProfile) -> adw::NavigationPage {
         });
         detail_header.pack_end(&export_btn);
 
-        // Activate profile button — registers current process in GameMode
+        // Activate profile button — marks profile as selected in UI context.
         let activate_btn = gtk4::Button::builder()
             .icon_name("media-playback-start-symbolic")
             .tooltip_text(i18n("Activate Profile"))
             .build();
         activate_btn.connect_clicked(move |btn| {
             let btn_ref = btn.clone();
-            gio::spawn_blocking(bigame_core::dbus::gamemode_register);
-            toast::show(&btn_ref, &i18n("Profile activated via GameMode"));
+            toast::show(&btn_ref, &i18n("Profile activated"));
         });
         detail_header.pack_end(&activate_btn);
 

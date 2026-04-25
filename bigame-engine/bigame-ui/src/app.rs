@@ -6,6 +6,7 @@
 use adw::prelude::*;
 use gtk4::glib;
 use libadwaita as adw;
+use std::path::PathBuf;
 
 use crate::i18n::i18n;
 use crate::style;
@@ -82,7 +83,6 @@ pub fn run() -> adw::glib::ExitCode {
                         }
                         tray::TrayAction::SwitchProfile(name) => {
                             tracing::info!("Tray: switching to profile '{name}'");
-                            let _ = bigame_core::dbus::gamemode_register();
                         }
                     }
                 }
@@ -92,8 +92,10 @@ pub fn run() -> adw::glib::ExitCode {
             // Update tray status periodically
             let th_ref = tray_handle.clone();
             glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
-                let gm_active = bigame_core::dbus::gamemode_active_count() > 0;
+                let turbo_active = bigame_core::dbus::power_profile_get()
+                    .is_some_and(|p| p.eq_ignore_ascii_case("performance"));
                 let falcond_running = bigame_core::dbus::falcond_is_running();
+                let missing_runtime = detect_missing_runtime_packages();
                 
                 let status = if !falcond_running {
                     error_indicator.set_error_with_action(
@@ -109,9 +111,40 @@ pub fn run() -> adw::glib::ExitCode {
                         ],
                     );
                     tray::Status::Warning
+                } else if !missing_runtime.is_empty() {
+                    let missing_csv = missing_runtime.join(", ");
+                    let install_hint = install_missing_packages_hint(&missing_runtime);
+                    if let Some(cmd) = install_missing_packages_action(&missing_runtime) {
+                        let copy_cmd = install_missing_packages_shell_command(&missing_runtime)
+                            .unwrap_or_default();
+                        error_indicator.set_error_with_action_and_copy(
+                            &i18n("Missing Runtime Dependencies"),
+                            &format!(
+                                "{}: {}",
+                                i18n("Required packages were not found in the system"),
+                                missing_csv
+                            ),
+                            &install_hint,
+                            &i18n("Install Missing Packages"),
+                            cmd,
+                            &i18n("Copy Install Command"),
+                            &copy_cmd,
+                        );
+                    } else {
+                        error_indicator.set_error(
+                            &i18n("Missing Runtime Dependencies"),
+                            &format!(
+                                "{}: {}",
+                                i18n("Required packages were not found in the system"),
+                                missing_csv
+                            ),
+                            &install_hint,
+                        );
+                    }
+                    tray::Status::Warning
                 } else {
                     error_indicator.clear();
-                    if gm_active {
+                    if turbo_active {
                         tray::Status::Active
                     } else {
                         tray::Status::Idle
@@ -125,6 +158,104 @@ pub fn run() -> adw::glib::ExitCode {
     });
 
     app.run()
+}
+
+#[must_use]
+fn detect_missing_runtime_packages() -> Vec<String> {
+    let cfg = bigame_core::video_config::load();
+    let mut missing = Vec::new();
+
+    if cfg.upscaling.gamescope_enabled && !binary_in_path("gamescope") {
+        missing.push("gamescope".to_string());
+    }
+    // vkbasalt is a Vulkan implicit layer (no CLI binary). Detect via layer manifest or libvkbasalt.so.
+    if cfg.upscaling.vkbasalt_enabled && !vkbasalt_installed() {
+        missing.push("vkbasalt".to_string());
+    }
+
+    missing
+}
+
+#[must_use]
+fn vkbasalt_installed() -> bool {
+    const LAYER_PATHS: &[&str] = &[
+        "/usr/share/vulkan/implicit_layer.d/vkBasalt.json",
+        "/usr/share/vulkan/implicit_layer.d/vkBasalt.x86_64.json",
+        "/usr/share/vulkan/implicit_layer.d/vkBasalt.i686.json",
+        "/usr/lib/libvkbasalt.so",
+        "/usr/lib32/libvkbasalt.so",
+    ];
+    LAYER_PATHS.iter().any(|p| std::path::Path::new(p).exists())
+}
+
+#[must_use]
+fn install_missing_packages_hint(missing: &[String]) -> String {
+    if let Some(cmd) = install_missing_packages_shell_command(missing) {
+        return format!(
+            "{}\n1) {}\n2) {}\n3) {}\n\n{}\n{}",
+            i18n("Troubleshooting"),
+            i18n("Install missing packages"),
+            i18n("Restart BiGameMode"),
+            i18n("Run Runtime Diagnostics again after opening a game"),
+            i18n("Command"),
+            cmd
+        );
+    }
+
+    format!(
+        "{}\n1) {}\n2) {}\n3) {}\n\n{}: {}",
+        i18n("Troubleshooting"),
+        i18n("Install missing packages with your package manager"),
+        i18n("Restart BiGameMode"),
+        i18n("Run Runtime Diagnostics again after opening a game"),
+        i18n("Missing packages"),
+        missing.join(", ")
+    )
+}
+
+#[must_use]
+fn install_missing_packages_action(missing: &[String]) -> Option<Vec<String>> {
+    if missing.is_empty() {
+        return None;
+    }
+    // Prefer pamac-installer (full GUI window with graphical polkit auth).
+    if binary_in_path("pamac-installer") {
+        let mut argv = vec!["pamac-installer".to_string()];
+        argv.extend(missing.iter().cloned());
+        return Some(argv);
+    }
+    // Fallback: non-interactive pacman via pkexec so it doesn't block on stdin.
+    if binary_in_path("pacman") {
+        let cmd = format!("pacman -S --needed --noconfirm {}", missing.join(" "));
+        return Some(vec!["pkexec".into(), "sh".into(), "-c".into(), cmd]);
+    }
+    None
+}
+
+#[must_use]
+fn install_missing_packages_shell_command(missing: &[String]) -> Option<String> {
+    if missing.is_empty() {
+        return None;
+    }
+    if binary_in_path("pamac-installer") {
+        return Some(format!("pamac-installer {}", missing.join(" ")));
+    }
+    if binary_in_path("pacman") {
+        return Some(format!(
+            "sudo pacman -S --needed {}",
+            missing.join(" ")
+        ));
+    }
+    None
+}
+
+#[must_use]
+fn binary_in_path(binary: &str) -> bool {
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+
+    std::env::split_paths(&path).any(|dir: PathBuf| dir.join(binary).is_file())
 }
 
 /// Present the About dialog with system information.
@@ -202,10 +333,6 @@ fn collect_system_info() -> String {
     // Installed sched-ext schedulers
     let scheds = bigame_core::sched::detect_installed();
     lines.push(format!("Schedulers: {}", scheds.join(", ")));
-
-    // GameMode status
-    let gm = bigame_core::dbus::gamemode_active_count();
-    lines.push(format!("GameMode active: {gm}"));
 
     // Power profile
     if let Some(pp) = bigame_core::dbus::power_profile_get() {

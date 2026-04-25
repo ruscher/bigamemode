@@ -21,3 +21,10 @@ pub async fn daemon_proxy() -> anyhow::Result<BiGameDaemonProxy<'static>> {
     let proxy = BiGameDaemonProxy::new(&connection).await?;
     Ok(proxy)
 }
+
+/// Blocking helper to get a connected proxy (safe for non-Tokio contexts).
+pub fn daemon_proxy_blocking() -> anyhow::Result<BiGameDaemonProxyBlocking<'static>> {
+    let connection = zbus::blocking::Connection::system()?;
+    let proxy = BiGameDaemonProxyBlocking::new(&connection)?;
+    Ok(proxy)
+}

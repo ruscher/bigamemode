@@ -7,3 +7,4 @@ pub mod profile_wizard;
 pub mod profiles;
 pub mod settings;
 pub mod tuning;
+pub mod video;

@@ -12,12 +12,15 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::models::{FrameGenBackend, FrameGenSettings};
+
 /// Relative path from $HOME to the lsfg-vk config file.
 const CONFIG_REL_PATH: &str = ".config/lsfg-vk/conf.toml";
 
 // ── TOML structures mirroring lsfg-vk 1.x GameConf / GlobalConf ─────────────
 // Fields sourced from lsfg-vk-common/include/lsfg-vk-common/configuration/config.hpp
-// version must be 2; multiplier must be > 1; flow_scale must be 0.25–1.0.
+// version must be 1 (as required by current lsfg-vk parser);
+// multiplier must be > 1; flow_scale must be 0.25–1.0.
 
 /// An lsfg-vk `[[profile]]` entry — matches GameConf exactly.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -66,7 +69,7 @@ impl LsfgGlobal {
 /// Full `~/.config/lsfg-vk/conf.toml` structure.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct LsfgConfig {
-    /// Must be 2 — lsfg-vk rejects any other value.
+    /// Must be 1 for current lsfg-vk parser.
     #[serde(default = "default_version")]
     pub version: u32,
     /// `[global]` section — omitted if empty.
@@ -77,9 +80,9 @@ struct LsfgConfig {
     pub profiles: Vec<LsfgProfile>,
 }
 
-/// lsfg-vk config format version — MUST be 2.
+/// lsfg-vk config format version — MUST be 1.
 fn default_version() -> u32 {
-    2
+    1
 }
 
 // ── Path resolution ─────────────────────────────────────────────────────────
@@ -137,15 +140,27 @@ pub fn write_profile(
     hdr: bool,
     present_mode: u32,
 ) -> Result<()> {
-    // lsfg-vk requires multiplier > 1; clamp to minimum 2.
-    let multiplier = multiplier.max(2);
+    // Multiplier 1 means "disabled" for this profile.
+    if multiplier <= 1 {
+        return disable_for_game(name);
+    }
+
+    // lsfg-vk requires multiplier > 1; clamp upper range only.
+    let multiplier = multiplier.min(20);
+
+    anyhow::ensure!(
+        is_lossless_dll_ready(),
+        "Lossless.dll not found in configured LSFG path"
+    );
+
     anyhow::ensure!(
         (25..=100).contains(&flow_scale_pct),
         "flow_scale_pct must be 25–100"
     );
 
     let mut cfg = read_config()?;
-    cfg.version = 2;
+    // Force parser-compatible version.
+    cfg.version = 1;
 
     // flow_scale_pct is validated; integers ≤ 100 are exact in f32.
     #[allow(clippy::cast_precision_loss)]
@@ -236,6 +251,16 @@ pub fn read_global_dll() -> Option<String> {
     read_config().ok()?.global.dll
 }
 
+/// Returns `true` when a valid Lossless.dll path is configured and exists.
+#[must_use]
+pub fn is_lossless_dll_ready() -> bool {
+    let Some(path) = read_global_dll() else {
+        return false;
+    };
+    let p = PathBuf::from(path);
+    p.is_file()
+}
+
 /// Write `[global].dll` to the lsfg-vk config.
 ///
 /// Pass `None` to remove the global DLL override.
@@ -246,4 +271,125 @@ pub fn write_global_dll(dll: Option<String>) -> Result<()> {
     let mut cfg = read_config()?;
     cfg.global.dll = dll;
     write_config(&cfg)
+}
+
+// ── Conflict detection helpers ───────────────────────────────────────────────
+
+/// Returns `true` if ANY lsfg-vk profile has `multiplier > 1`.
+///
+/// Used to decide whether to show a conflict warning when OptiScaler or AFMF
+/// is also enabled (both generate frames — running both simultaneously causes
+/// visual artifacts).
+#[must_use]
+pub fn has_any_active_profile() -> bool {
+    if !is_lossless_dll_ready() {
+        return false;
+    }
+    read_config()
+        .ok()
+        .map_or(false, |cfg| cfg.profiles.iter().any(|p| p.multiplier > 1))
+}
+
+/// Returns `true` when global video settings still allow lsfg-vk profiles.
+#[must_use]
+pub fn global_state_allows_lsfg(frame_gen: &FrameGenSettings) -> bool {
+    frame_gen.enabled && frame_gen.backend == FrameGenBackend::LsfgVk
+}
+
+/// Neutralize persisted lsfg-vk profiles when global frame generation disables them.
+///
+/// This prevents Steam-native launches from continuing to load the lsfg-vk
+/// implicit layer after the user has disabled frame generation globally.
+///
+/// # Errors
+/// Returns error if the lsfg-vk config cannot be read or written.
+pub fn sync_global_enablement(frame_gen: &FrameGenSettings) -> Result<bool> {
+    if global_state_allows_lsfg(frame_gen) {
+        return Ok(false);
+    }
+
+    disable_all_profiles()
+}
+
+/// Returns `true` if the specific game has an lsfg-vk profile with `multiplier > 1`.
+///
+/// A game is "active" for lsfg-vk FG when its profile multiplier is ≥ 2.
+#[must_use]
+pub fn is_active_for_game(name: &str) -> bool {
+    if !is_lossless_dll_ready() {
+        return false;
+    }
+    read_config().ok().map_or(false, |cfg| {
+        cfg.profiles
+            .iter()
+            .any(|p| p.active_in.contains(&name.to_owned()) && p.multiplier > 1)
+    })
+}
+
+/// Disable LSFG for all profiles by forcing multipliers to 1.
+///
+/// Returns `Ok(true)` if at least one profile was changed.
+pub fn disable_all_profiles() -> Result<bool> {
+    let mut cfg = read_config()?;
+    let mut changed = false;
+    for profile in &mut cfg.profiles {
+        if profile.multiplier > 1 {
+            profile.multiplier = 1;
+            changed = true;
+        }
+    }
+    if changed {
+        write_config(&cfg)?;
+    }
+    Ok(changed)
+}
+
+/// Disable lsfg-vk FG for a specific game by setting its multiplier to 1.
+///
+/// Intended to resolve frame generation conflicts when the user switches to
+/// OptiScaler or AFMF as the primary backend. Does nothing if no profile exists.
+///
+/// # Errors
+/// Returns error if config read/write fails.
+pub fn disable_for_game(name: &str) -> Result<()> {
+    let mut cfg = read_config()?;
+    let mut changed = false;
+    for profile in cfg.profiles.iter_mut() {
+        if profile.active_in.contains(&name.to_owned()) && profile.multiplier > 1 {
+            profile.multiplier = 1;
+            changed = true;
+        }
+    }
+    if changed {
+        write_config(&cfg)?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::global_state_allows_lsfg;
+    use crate::models::{FrameGenBackend, FrameGenMode, FrameGenSettings};
+
+    #[test]
+    fn test_global_state_allows_lsfg_only_for_enabled_lsfg_backend() {
+        let disabled = FrameGenSettings::default();
+        assert!(!global_state_allows_lsfg(&disabled));
+
+        let optiscaler = FrameGenSettings {
+            enabled: true,
+            backend: FrameGenBackend::OptiScaler,
+            mode: FrameGenMode::Fsr3,
+            ..FrameGenSettings::default()
+        };
+        assert!(!global_state_allows_lsfg(&optiscaler));
+
+        let lsfg = FrameGenSettings {
+            enabled: true,
+            backend: FrameGenBackend::LsfgVk,
+            mode: FrameGenMode::Fsr3,
+            ..FrameGenSettings::default()
+        };
+        assert!(global_state_allows_lsfg(&lsfg));
+    }
 }

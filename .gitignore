@@ -10,6 +10,14 @@ pkgbuild/
 bigame-mode/src/
 bigame-mode/pkg/
 
+# Stray bare-clone of upstream package repo (not part of source tree)
+/bigame-mode/
+
+# Built Arch packages
+*.pkg.tar
+*.pkg.tar.zst
+*.pkg.tar.xz
+
 # Compiled locale files
 *.mo
 

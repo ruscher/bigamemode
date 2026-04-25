@@ -1016,16 +1016,24 @@ msgid ""
 "This can happen if the configuration files got corrupted by an older version "
 "of the UI."
 msgstr ""
+"O daemon em segundo plano do BiGameMode (falcond) não está em execução.\n"
+"Isso pode acontecer se os arquivos de configuração foram corrompidos por uma "
+"versão anterior da interface."
 
 #: crates/bigame-ui/src/app.rs:105
 msgid ""
 "Click 'Repair & Enable' to automatically reset corrupted configurations and "
 "start the service."
 msgstr ""
+"Clique em 'Reparar e Ativar' para redefinir automaticamente as configurações "
+"corrompidas e iniciar o serviço."
 
 #: crates/bigame-ui/src/app.rs:106
 msgid "Repair & Enable"
 msgstr "Reparar e Ativar"
+
+msgid "What to do"
+msgstr "O que fazer"
 
 #: crates/bigame-ui/src/app.rs:145
 msgid "Performance tuning for Linux gaming"
@@ -1039,6 +1047,429 @@ msgstr "Desenvolvedores"
 msgid "Special Thanks"
 msgstr "Agradecimentos Especiais"
 
+#. ── Video Settings view (bigame-engine/bigame-ui/src/views/video.rs) ──────
+
+msgid "Video"
+msgstr "Vídeo"
+
+msgid "Spatial Upscaling"
+msgstr "Upscaling Espacial"
+
+msgid ""
+"Apply upscaling filters when launching games. Gamescope: best quality, uses "
+"more VRAM."
+msgstr ""
+"Aplica filtros de upscaling ao lançar jogos. Gamescope: melhor qualidade, "
+"usa mais VRAM."
+
+msgid "Gamescope / Wine FSR / vkBasalt"
+msgstr "Gamescope / Wine FSR / vkBasalt"
+
+msgid "Spatial upscaling and post-processing pipeline"
+msgstr "Pipeline de upscaling espacial e pós-processamento"
+
+msgid "Enable Gamescope Upscaling"
+msgstr "Ativar Upscaling Gamescope"
+
+msgid "Launches games through Gamescope with the selected filter"
+msgstr "Lança jogos pelo Gamescope com o filtro selecionado"
+
+msgid "Upscaling Filter"
+msgstr "Filtro de Upscaling"
+
+msgid "Gamescope upscaling algorithm"
+msgstr "Algoritmo de upscaling do Gamescope"
+
+msgid "Integer Scaling"
+msgstr "Escalonamento Inteiro"
+
+msgid "0 = maximum sharpness · 20 = softest (--fsr-sharpness)"
+msgstr "0 = nitidez máxima · 20 = mais suave (--fsr-sharpness)"
+
+msgid "Render Resolution (Base)"
+msgstr "Resolução de Renderização (Base)"
+
+msgid "Game render resolution (-w/-h). 0 = use game native."
+msgstr "Resolução de renderização do jogo (-w/-h). 0 = usar resolução nativa."
+
+msgid "Output Resolution (Target)"
+msgstr "Resolução de Saída (Alvo)"
+
+msgid "Display output resolution (-W/-H). 0 = same as render."
+msgstr "Resolução de saída do monitor (-W/-H). 0 = igual à renderização."
+
+msgid "Wine/Proton Fullscreen FSR"
+msgstr "Wine/Proton FSR Tela Cheia"
+
+msgid "Adds WINE_FULLSCREEN_FSR=1 to game environment (Wine/Proton)"
+msgstr "Adiciona WINE_FULLSCREEN_FSR=1 ao ambiente do jogo (Wine/Proton)"
+
+msgid "Wine FSR Quality"
+msgstr "Qualidade Wine FSR"
+
+msgid "WINE_FULLSCREEN_FSR_MODE value"
+msgstr "Valor de WINE_FULLSCREEN_FSR_MODE"
+
+msgid "Native"
+msgstr "Nativo"
+
+msgid "vkBasalt Post-Processing"
+msgstr "Pós-Processamento vkBasalt"
+
+msgid "Adds ENABLE_VKBASALT=1 to game environment (requires vkBasalt)"
+msgstr "Adiciona ENABLE_VKBASALT=1 ao ambiente do jogo (requer vkBasalt)"
+
+msgid "vkBasalt Config Path"
+msgstr "Caminho de Configuração vkBasalt"
+
+#. ── Frame Generation ────────────────────────────────────────────────────────
+
+msgid "Frame Generation"
+msgstr "Geração de Quadros"
+
+msgid ""
+"Artificial frame generation for compatible games. OptiScaler: FSR 3 frame "
+"generation for DLSS3 titles."
+msgstr ""
+"Geração artificial de quadros para jogos compatíveis. OptiScaler: geração "
+"de quadros FSR 3 para títulos com DLSS3."
+
+msgid ""
+"OptiScaler and lsfg-vk both generate frames — disable one to avoid conflicts."
+msgstr ""
+"OptiScaler e lsfg-vk ambos geram quadros — desative um para evitar conflitos."
+
+msgid "OptiScaler / AFMF / lsfg-vk"
+msgstr "OptiScaler / AFMF / lsfg-vk"
+
+msgid "Artificial frame generation backends"
+msgstr "Backends de geração artificial de quadros"
+
+msgid "Enable Frame Generation"
+msgstr "Ativar Geração de Quadros"
+
+msgid "Activates the selected backend on game launch"
+msgstr "Ativa o backend selecionado ao lançar o jogo"
+
+msgid "Backend"
+msgstr "Backend"
+
+msgid "Frame generation technology to use"
+msgstr "Tecnologia de geração de quadros a usar"
+
+msgid "None"
+msgstr "Nenhum"
+
+msgid "Rendering mode passed to OptiScaler"
+msgstr "Modo de renderização passado ao OptiScaler"
+
+msgid "Show On-Screen Status (OSD)"
+msgstr "Mostrar Status na Tela (OSD)"
+
+msgid "Displays frame generation status overlay while in-game"
+msgstr "Exibe painel de status da geração de quadros durante o jogo"
+
+msgid "Stage OptiScaler DLLs"
+msgstr "Instalar DLLs do OptiScaler"
+
+msgid ""
+"Copies dxgi.dll/nvngx.dll from source directory into game prefix on launch"
+msgstr ""
+"Copia dxgi.dll/nvngx.dll do diretório fonte para o prefixo do jogo ao "
+"lançar"
+
+msgid "OptiScaler Source Directory"
+msgstr "Diretório Fonte do OptiScaler"
+
+msgid "Enable AFMF Experimental Variables"
+msgstr "Ativar Variáveis Experimentais AFMF"
+
+msgid ""
+"Advanced: sets RADV_PERFTEST=afmf. Full AFMF requires amdgpu-pro; on RADV "
+"(open driver) this is experimental."
+msgstr ""
+"Avançado: define RADV_PERFTEST=afmf. AFMF completo requer amdgpu-pro; no "
+"driver livre (RADV), é experimental."
+
+msgid "AFMF Env Override"
+msgstr "Substituição de Variável de Ambiente AFMF"
+
+#. ── Tutorial — video tab ────────────────────────────────────────────────────
+
+msgid "Advanced Video Settings"
+msgstr "Configurações Avançadas de Vídeo"
+
+msgid ""
+"<b>Gamescope Upscaling</b> — Launches games inside a Gamescope compositor "
+"with spatial upscaling.\n"
+"  · <b>FSR 1.0</b>: AMD FidelityFX Super Resolution (best quality, GPU-"
+"agnostic)\n"
+"  · <b>NIS</b>: Nvidia Image Scaling (sharpening + upscale)\n"
+"  · <b>Integer Scaling</b>: crisp pixel-perfect scaling for retro games"
+msgstr ""
+"<b>Upscaling Gamescope</b> — Lança jogos dentro do compositor Gamescope com "
+"upscaling espacial.\n"
+"  · <b>FSR 1.0</b>: AMD FidelityFX Super Resolution (melhor qualidade, "
+"compatível com qualquer GPU)\n"
+"  · <b>NIS</b>: Nvidia Image Scaling (nitidez + upscale)\n"
+"  · <b>Escalonamento Inteiro</b>: escala pixel-perfeita para jogos retrô"
+
+msgid "<b>FSR Sharpness</b> — Controls Gamescope FSR sharpening strength (0 = maximum · 20 = softest)."
+msgstr "<b>Nitidez FSR</b> — Controla a intensidade de nitidez FSR do Gamescope (0 = máxima · 20 = mais suave)."
+
+msgid ""
+"<b>Wine/Proton FSR</b> — Sets <tt>WINE_FULLSCREEN_FSR=1</tt> in the game "
+"environment, enabling in-game TAA + FSR upscaling via Wine/Proton without "
+"Gamescope."
+msgstr ""
+"<b>Wine/Proton FSR</b> — Define <tt>WINE_FULLSCREEN_FSR=1</tt> no ambiente "
+"do jogo, ativando TAA + upscaling FSR via Wine/Proton sem necessidade do "
+"Gamescope."
+
+msgid ""
+"<b>vkBasalt Post-Processing</b> — Sets <tt>ENABLE_VKBASALT=1</tt> to "
+"activate the vkBasalt Vulkan post-processing layer (CAS sharpening, FXAA, "
+"SMAA)."
+msgstr ""
+"<b>Pós-Processamento vkBasalt</b> — Define <tt>ENABLE_VKBASALT=1</tt> para "
+"ativar a camada Vulkan de pós-processamento vkBasalt (nitidez CAS, FXAA, "
+"SMAA)."
+
+msgid ""
+"<b>OptiScaler</b> — Replaces DLSS3 Frame Generation with FSR 3 / XeSS in "
+"compatible games. Stages DLLs into the game prefix on launch."
+msgstr ""
+"<b>OptiScaler</b> — Substitui a Geração de Quadros DLSS3 por FSR 3 / XeSS "
+"em jogos compatíveis. Instala DLLs no prefixo do jogo ao lançar."
+
+msgid ""
+"<b>AFMF</b> — AMD Fluid Motion Frames. Driver-level frame generation for "
+"AMD GPUs. Experimental on open-source RADV driver."
+msgstr ""
+"<b>AFMF</b> — AMD Fluid Motion Frames. Geração de quadros no nível do "
+"driver para GPUs AMD. Experimental no driver livre (RADV)."
+
+msgid ""
+"<b>lsfg-vk</b> — Lossless Scaling Frame Generation via a Vulkan implicit "
+"layer. Configured globally in the Tuning tab."
+msgstr ""
+"<b>lsfg-vk</b> — Frame Generation via camada Vulkan implícita do Lossless "
+"Scaling. Configurado globalmente na aba Ajustes."
+
+msgid ""
+"<b>Conflict Warning</b> — OptiScaler and lsfg-vk both intercept the same "
+"rendering pipeline. Running both simultaneously causes artifacts; disable one."
+msgstr ""
+"<b>Aviso de Conflito</b> — OptiScaler e lsfg-vk interceptam o mesmo "
+"pipeline de renderização. Executar ambos simultaneamente causa artefatos; "
+"desative um."
+
+#. ── Dashboard runtime monitoring ────────────────────────────────────────────
+
+msgid "Turbo Mode"
+msgstr "Modo Turbo"
+
+msgid "Required to apply advanced video optimizations"
+msgstr "Necessário para aplicar otimizações avançadas de vídeo"
+
+msgid "Video Runtime Status"
+msgstr "Status de Execução de Vídeo"
+
+msgid "Runtime detection for Gamescope wrapper"
+msgstr "Detecção em tempo real do wrapper Gamescope"
+
+msgid "Checks WINE_FULLSCREEN_FSR in game process environment"
+msgstr "Verifica WINE_FULLSCREEN_FSR no ambiente do processo do jogo"
+
+msgid "Checks ENABLE_VKBASALT in game process environment"
+msgstr "Verifica ENABLE_VKBASALT no ambiente do processo do jogo"
+
+msgid "Shows selected backend status during active game"
+msgstr "Mostra status do backend selecionado durante jogo ativo"
+
+msgid "Waiting"
+msgstr "Aguardando"
+
+msgid "Off"
+msgstr "Desligado"
+
+msgid "Disabled in settings"
+msgstr "Desativado nas configurações"
+
+msgid "Blocked"
+msgstr "Bloqueado"
+
+msgid "Requires Turbo Mode (Booster)"
+msgstr "Requer Modo Turbo (Booster)"
+
+msgid "No active game profile"
+msgstr "Nenhum perfil de jogo ativo"
+
+msgid "Pending"
+msgstr "Pendente"
+
+msgid "Enabled but not detected in game process"
+msgstr "Ativado, mas não detectado no processo do jogo"
+
+msgid "Detected during current game"
+msgstr "Detectado durante o jogo atual"
+
+msgid "Performance profile active"
+msgstr "Perfil de desempenho ativo"
+
+msgid "Enable Booster Mode to apply video optimizations"
+msgstr "Ative o Modo Booster para aplicar otimizações de vídeo"
+
+msgid "Inactive"
+msgstr "Inativo"
+
+msgid "Active"
+msgstr "Ativo"
+
+msgid "Runtime Diagnostics"
+msgstr "Diagnóstico de Execução"
+
+msgid "Collects current checks for Turbo/game/env detection"
+msgstr "Coleta verificações atuais de Turbo/jogo/detecção de variáveis"
+
+msgid "Run Diagnostics"
+msgstr "Executar Diagnóstico"
+
+msgid "Diagnostics failed"
+msgstr "Falha no diagnóstico"
+
+msgid "Runtime Diagnostics Report"
+msgstr "Relatório de Diagnóstico de Execução"
+
+msgid "BiGameMode Runtime Diagnostics"
+msgstr "Diagnóstico de Execução do BiGameMode"
+
+msgid "Configured Features"
+msgstr "Recursos Configurados"
+
+msgid "Detected Runtime Signals"
+msgstr "Sinais Detectados em Execução"
+
+msgid "Save diagnostics log"
+msgstr "Salvar log de diagnóstico"
+
+msgid "Failed to save diagnostics"
+msgstr "Falha ao salvar diagnóstico"
+
+msgid "Diagnostics saved"
+msgstr "Diagnóstico salvo"
+
+msgid "Copy diagnostics report"
+msgstr "Copiar relatório de diagnóstico"
+
+msgid "Diagnostics copied"
+msgstr "Diagnóstico copiado"
+
+msgid "Failed to copy diagnostics"
+msgstr "Falha ao copiar diagnóstico"
+
+msgid "Conflict"
+msgstr "Conflito"
+
+msgid "Conflicting frame generation pipelines detected (disable one backend)"
+msgstr "Conflito entre pipelines de geração de quadros detectado (desative um backend)"
+
+msgid "Troubleshooting"
+msgstr "Solução de Problemas"
+
+msgid "Create profile for the game executable in Dashboard"
+msgstr "Crie perfil para o executável do jogo no Dashboard"
+
+msgid "Launch game from Dashboard button (Gamescope)"
+msgstr "Inicie o jogo pelo botão do Dashboard (Gamescope)"
+
+msgid "Do not launch directly from Steam/Lutris if you need BiGame injections"
+msgstr "Não inicie direto por Steam/Lutris se precisar das injeções do BiGame"
+
+msgid "Launch (Turbo)"
+msgstr "Iniciar (Turbo)"
+
+msgid "Launch game with BiGameMode video features"
+msgstr "Iniciar jogo com recursos de vídeo do BiGameMode"
+
+msgid "Setup Assistant (step-by-step)"
+msgstr "Assistente de Configuração (passo a passo)"
+
+msgid "Recommended flow to make Turbo features work in-game"
+msgstr "Fluxo recomendado para fazer recursos Turbo funcionarem no jogo"
+
+msgid "1. Create profile with Wizard"
+msgstr "1. Criar perfil com Assistente"
+
+msgid "Use guided setup to create game profile safely"
+msgstr "Use configuração guiada para criar perfil de jogo com segurança"
+
+msgid "2. Enable Turbo + Video features"
+msgstr "2. Ativar Turbo + recursos de Vídeo"
+
+msgid "Turbo Mode must be active to apply Gamescope/FSR/vkBasalt/FrameGen"
+msgstr "Modo Turbo deve estar ativo para aplicar Gamescope/FSR/vkBasalt/FrameGen"
+
+msgid "3. Launch from Dashboard"
+msgstr "3. Iniciar pelo Dashboard"
+
+msgid "Use 'Launch (Turbo)' for BiGameMode injections"
+msgstr "Use 'Iniciar (Turbo)' para injeções do BiGameMode"
+
+msgid "4. Validate Runtime Status"
+msgstr "4. Validar Status em Execução"
+
+msgid "Check Video Runtime Status and Active Profile during gameplay"
+msgstr "Verifique Video Runtime Status e Perfil Ativo durante o jogo"
+
+msgid "Create a game profile for automatic activation"
+msgstr "Criar perfil de jogo para ativação automática"
+
+msgid "Open guided profile setup"
+msgstr "Abrir configuração guiada de perfil"
+
+msgid "Profile creation failed. Check Runtime Diagnostics."
+msgstr "Falha ao criar perfil. Verifique Runtime Diagnostics."
+
+msgid "Launch command sent"
+msgstr "Comando de execução enviado"
+
+msgid "Launch failed. Open terminal logs / Runtime Diagnostics."
+msgstr "Falha ao iniciar. Abra os logs do terminal / Runtime Diagnostics."
+
+msgid "Launch task failed. Open terminal logs / Runtime Diagnostics."
+msgstr "Falha na tarefa de execução. Abra os logs do terminal / Runtime Diagnostics."
+
+msgid "OptiScaler disabled automatically (lsfg-vk selected)"
+msgstr "OptiScaler desativado automaticamente (lsfg-vk selecionado)"
+
+msgid "Backend switched to OptiScaler (lsfg-vk was active)"
+msgstr "Backend alterado para OptiScaler (lsfg-vk estava ativo)"
+
+msgid "OptiScaler disabled automatically (LSFG enabled in Tuning)"
+msgstr "OptiScaler desativado automaticamente (LSFG ativado em Ajustes)"
+
+msgid "LSFG-VK requires a valid Lossless.dll path"
+msgstr "LSFG-VK requer um caminho válido para Lossless.dll"
+
+msgid "LSFG write failed"
+msgstr "Falha ao gravar configuração do LSFG"
+
+msgid "Enable LSFG Frame Generation"
+msgstr "Ativar Geração de Quadros LSFG"
+
+msgid "When disabled, multiplier is forced to 1x"
+msgstr "Quando desativado, o multiplicador é forçado para 1x"
+
+msgid "Enable LSFG-VK"
+msgstr "Ativar LSFG-VK"
+
+msgid "When disabled, lsfg-vk backend is set to None"
+msgstr "Quando desativado, o backend lsfg-vk é definido como Nenhum"
+
+msgid "Save failed. Check terminal logs."
+msgstr "Falha ao salvar. Verifique os logs do terminal."
+
 #~ msgid "GameMode"
 #~ msgstr "GameMode"
 
@@ -1051,9 +1482,6 @@ msgstr "Agradecimentos Especiais"
 #, c-format
 #~ msgid "%s game(s) active"
 #~ msgstr "%s jogo(s) ativo(s)"
-
-#~ msgid "Inactive"
-#~ msgstr "Inativo"
 
 #~ msgid "falcond Journal"
 #~ msgstr "Diário do falcond"

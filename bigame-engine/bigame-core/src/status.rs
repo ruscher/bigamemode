@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 /// Falcond status file path (tmp, world-readable).
-pub const STATUS_PATH: &str = "/run/falcond/status";
+pub const STATUS_PATH: &str = "/tmp/falcond_status";
 
 /// Parsed falcond daemon status.
 #[derive(Debug, Clone, Default)]

@@ -43,6 +43,76 @@ A interface também orquestra o micro-compositor Gamescope e o GameMode da Feral
 
 ---
 
+## 📚 Arquitetura (Resumo Técnico)
+
+### Stack principal
+
+- **Linguagem**: Rust (workspace com `bigame-ui`, `bigame-core`, `bigame-daemon`)
+- **UI**: GTK4 + libadwaita
+- **Comunicação**: D-Bus (`zbus`)
+- **Runtime assíncrono**: Tokio
+- **Configuração**: Serde + TOML
+- **Observabilidade**: tracing + tracing-subscriber
+- **Localização**: gettext-rs (`.po`/`.mo`)
+
+### Integração Linux
+
+- systemd (services/activation)
+- polkit
+- Power Profiles Daemon (`net.hadess.PowerProfiles`)
+- GameMode (`com.feralinteractive.GameMode`)
+- leitura de `sysfs`/`procfs` para telemetria
+
+### Integração gamer
+
+- `falcond` (daemon de otimização/perfis)
+- `lsfg-vk` (frame generation layer)
+- `gamescope`
+- `mangohud` (opcional)
+- `sched-ext` / `scx-scheds`
+
+### Build e distribuição
+
+- Cargo
+- Meson
+- Flatpak (`org.gnome.Platform`)
+- PKGBUILD (Arch/BigLinux)
+- gettext toolchain (`xgettext`, `msgmerge`, `msgfmt`)
+
+### Componentes
+
+- **bigame-ui**: Dashboard, Wizard, Perfis, Vídeo avançado, diagnósticos e tray.
+- **bigame-core**: lógica de perfis, launcher, runtime checks, integração D-Bus.
+- **bigame-daemon**: operações privilegiadas (`SaveProfile`, `DeleteProfile`, etc.).
+
+### Fluxo `Launch (Turbo)`
+
+```text
+Usuário clica "Launch (Turbo)"
+  -> UI resolve comando (Steam URI ou executável)
+  -> core::launcher::LaunchPlan::build(...)
+     - valida Turbo ativo (PowerProfiles=performance)
+     - monta args/envs (Gamescope, Wine FSR, vkBasalt, AFMF...)
+     - opcional: staging OptiScaler
+  -> spawn do processo
+  -> falcond detecta processo e ativa perfil
+  -> falcond atualiza /tmp/falcond_status
+  -> Dashboard atualiza status em tempo real
+```
+
+### Fluxo de criação de perfil (Wizard)
+
+```text
+UI abre Wizard
+  -> usuário preenche etapas
+  -> save via bigame_core::profiles::save(...)
+  -> persistência no daemon root via D-Bus
+  -> sync lsfg-vk em modo best-effort
+  -> UI fecha wizard e atualiza lista de perfis
+```
+
+---
+
 ## 📦 Instalação
 
 ### Arch Linux / Manjaro / BigLinux

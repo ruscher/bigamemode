@@ -39,6 +39,9 @@ pub fn build(
     let tuning_holder = Rc::new(RefCell::new(views::tuning::build()));
     view_stack.add_named(&*tuning_holder.borrow(), Some("tuning"));
 
+    let video_view = views::video::build();
+    view_stack.add_named(&video_view, Some("video"));
+
     let logs = views::logs::build();
     view_stack.add_named(&logs, Some("logs"));
 
@@ -67,6 +70,7 @@ pub fn build(
         ("dashboard", i18n("Dashboard"), "speedometer-symbolic"),
         ("profiles", i18n("Profiles"), "applications-games-symbolic"),
         ("tuning", i18n("Tuning"), "preferences-system-symbolic"),
+        ("video", i18n("Video"), "video-display-symbolic"),
         ("logs", i18n("Logs"), "utilities-terminal-symbolic"),
         ("settings", i18n("Settings"), "emblem-system-symbolic"),
     ];

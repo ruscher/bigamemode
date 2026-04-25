@@ -328,25 +328,32 @@ fn serialize_profile_otter_conf(profile: &GameProfile) -> String {
 pub async fn save(profile: &GameProfile) -> Result<()> {
     let content = serialize_profile_otter_conf(profile);
 
-    let proxy = crate::dbus_client::daemon_proxy().await?;
-    proxy.save_profile(&profile.name, &content).await?;
+    // Use blocking proxy to avoid requiring a Tokio reactor in GTK main-thread flows.
+    let proxy = crate::dbus_client::daemon_proxy_blocking()?;
+    proxy.save_profile(&profile.name, &content)?;
 
-    // Sync FG parameters to ~/.config/lsfg-vk/conf.toml.
-    // lsfg-vk hot-reloads on mtime change — no process restart needed.
-    // Pacing is always "none" — lsfg-vk 1.x only supports None.
-    crate::fg::write_profile(
+    // Sync FG parameters to ~/.config/lsfg-vk/conf.toml (best-effort).
+    // Do not fail profile save if lsfg-vk config is invalid/incompatible.
+    // This keeps profile creation reliable even when external FG config is broken.
+    if let Err(e) = crate::fg::write_profile(
         &profile.name,
         profile.fg_multiplier,
         profile.fg_flow_scale,
         profile.fg_perf_mode,
         profile.fg_hdr,
         profile.fg_present_mode,
-    )?;
+    ) {
+        tracing::warn!(
+            profile = %profile.name,
+            error = %e,
+            "failed to sync lsfg-vk profile; profile save will continue"
+        );
+    }
 
     // Apply CPU governor immediately as a best-effort global effect.
     // Per-game scoping is handled by falcond's cpu_governor field at activation time.
     if !profile.cpu_governor.is_empty() {
-        if let Err(e) = crate::governor::set(&profile.cpu_governor).await {
+        if let Err(e) = proxy.set_cpu_governor(&profile.cpu_governor) {
             tracing::warn!(
                 "failed to apply cpu_governor '{}' on profile save: {e:#}",
                 profile.cpu_governor
@@ -365,8 +372,8 @@ pub async fn delete(name: &str) -> Result<()> {
     let path = user_path(name);
     anyhow::ensure!(path.exists(), "profile not found: {}", path.display());
 
-    let proxy = crate::dbus_client::daemon_proxy().await?;
-    proxy.delete_profile(name).await?;
+    let proxy = crate::dbus_client::daemon_proxy_blocking()?;
+    proxy.delete_profile(name)?;
 
     // Signal falcond to reload profiles
     std::process::Command::new("sudo")

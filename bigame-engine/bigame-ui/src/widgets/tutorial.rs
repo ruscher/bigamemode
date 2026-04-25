@@ -82,6 +82,21 @@ fn content(tab: &str) -> (String, String) {
             .join("\n\n"),
         ),
 
+        "video" => (
+            i18n("Advanced Video Settings"),
+            [
+                i18n("<b>Gamescope Upscaling</b> — Launches games inside a Gamescope compositor with spatial upscaling.\n  · <b>FSR 1.0</b>: AMD FidelityFX Super Resolution (best quality, GPU-agnostic)\n  · <b>NIS</b>: Nvidia Image Scaling (sharpening + upscale)\n  · <b>Integer Scaling</b>: crisp pixel-perfect scaling for retro games"),
+                i18n("<b>FSR Sharpness</b> — Controls Gamescope FSR sharpening strength (0 = maximum · 20 = softest)."),
+                i18n("<b>Wine/Proton FSR</b> — Sets <tt>WINE_FULLSCREEN_FSR=1</tt> in the game environment, enabling in-game TAA + FSR upscaling via Wine/Proton without Gamescope."),
+                i18n("<b>vkBasalt Post-Processing</b> — Sets <tt>ENABLE_VKBASALT=1</tt> to activate the vkBasalt Vulkan post-processing layer (CAS sharpening, FXAA, SMAA)."),
+                i18n("<b>OptiScaler</b> — Replaces DLSS3 Frame Generation with FSR 3 / XeSS in compatible games. Stages DLLs into the game prefix on launch."),
+                i18n("<b>AFMF</b> — AMD Fluid Motion Frames. Driver-level frame generation for AMD GPUs. Experimental on open-source RADV driver."),
+                i18n("<b>lsfg-vk</b> — Lossless Scaling Frame Generation via a Vulkan implicit layer. Configured globally in the Tuning tab."),
+                i18n("<b>Conflict Warning</b> — OptiScaler and lsfg-vk both intercept the same rendering pipeline. Running both simultaneously causes artifacts; disable one."),
+            ]
+            .join("\n\n"),
+        ),
+
         "logs" => (
             i18n("Logs"),
             [
