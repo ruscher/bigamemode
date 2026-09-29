@@ -482,6 +482,13 @@ O código é um workspace Rust em `bigame-engine/`:
   (`vkbasalt_style`), lsfg-vk (`lsfg`) e relatórios de benchmark
   (`bench_report`, `bench_native_report`). Rode com
   `cargo run -p bigame-core --example <nome>`.
+- `bigame-engine/scripts/clean-dev.sh` mostra o que a árvore guarda além do
+  código (`--analyze`, o padrão) e remove só o que um build recria
+  (`--safe`: `target/`, `src/` e `pkg/` do makepkg, pacotes gerados). Com
+  `--deep`, também tira da árvore os dados brutos de benchmark, para
+  `~/.local/share/bigame-mode/benchmarks/raw`. Nunca apaga arquivo rastreado
+  nem um clone aninhado, e nada fora da árvore. Veja
+  [docs/STORAGE-AUDIT.md](docs/STORAGE-AUDIT.md).
 
 <details>
 <summary><b>Traduções</b></summary>

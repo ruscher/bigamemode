@@ -61,7 +61,10 @@ The sessions are driven by the scripts in `bigame-engine/scripts/`:
 `bench-game.sh` (a game's built-in benchmark with its `[R]` rerun),
 `bench-lab.sh` (SuperTuxKart A/B sessions), `gpu-telemetry.sh` (a GPU
 sampler that forks nothing) and `scx-switch.sh` (the root side of scheduler
-sessions, one Polkit approval per session).
+sessions, one Polkit approval per session). A session's raw captures stay
+beside its report, ignored by git, until `clean-dev.sh --deep` moves them to
+`$XDG_DATA_HOME/bigame-mode/benchmarks/raw`, where the newest 20 sessions are
+kept (`RAW_KEEP`).
 
 Each session directory holds `system.json` (the machine, with no host name,
 user, home or address), the runs of every arm, and the report.
