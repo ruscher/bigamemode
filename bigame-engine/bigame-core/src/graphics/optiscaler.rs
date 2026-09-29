@@ -219,6 +219,12 @@ impl Cached {
     }
 }
 
+/// Whether `name` is a plain file name: no directory part, not hidden, so
+/// joining it to a cache directory stays in that directory.
+fn plain_name(name: &str) -> bool {
+    !name.is_empty() && !name.starts_with('.') && !name.contains(['/', '\\'])
+}
+
 fn record_path(cache: &Path, release: &Release) -> PathBuf {
     cache.join(&release.version).join("release.json")
 }
@@ -361,6 +367,12 @@ pub fn fetch(cache: &Path, release: &Release) -> Result<Cached> {
         "release asset is {} bytes",
         release.size
     );
+    ensure!(
+        plain_name(&release.version) && plain_name(&release.asset),
+        "release {:?} has an unusable name ({:?})",
+        release.tag,
+        release.asset
+    );
     let dir = cache.join(&release.version);
     std::fs::create_dir_all(&dir)?;
     let part = dir.join("download.part");
@@ -407,6 +419,9 @@ pub fn fetch(cache: &Path, release: &Release) -> Result<Cached> {
     let unpacked = dir.join("files");
     let _ = std::fs::remove_dir_all(&unpacked);
     extract_safely(&archive, &unpacked)?;
+    // Nothing reads the archive again: installs and Repair take the unpacked
+    // files, and its SHA-256 stays in release.json.
+    let _ = std::fs::remove_file(&archive);
     let c = Cached {
         release: release.clone(),
         dir: unpacked,
@@ -422,6 +437,68 @@ pub fn fetch(cache: &Path, release: &Release) -> Result<Cached> {
     )?;
     tracing::info!(target: "graphics", version = %release.version, "OptiScaler downloaded and verified");
     Ok(c)
+}
+
+/// Remove from the cache what no install needs, and return the bytes freed.
+///
+/// A release stays when its version is in `keep` (installed in a game, or
+/// the one Go back returns to) or it was downloaded less than `recent` ago
+/// (an Apply that has fetched it but not yet recorded it); of those only a
+/// leftover archive is removed. Every other complete release goes. A folder
+/// that is not a complete release (a download in progress) is left alone.
+/// Repair and Go back download a missing release again and check it, so
+/// pruning costs a download, never an install.
+#[must_use]
+pub fn prune_cache(cache: &Path, keep: &[String], recent: std::time::Duration) -> u64 {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let Ok(dir) = std::fs::read_dir(cache) else {
+        return 0;
+    };
+    let mut freed = 0;
+    for e in dir.flatten() {
+        if !e.file_type().is_ok_and(|t| t.is_dir()) {
+            continue;
+        }
+        let version = e.file_name().to_string_lossy().into_owned();
+        let Some(c) = cached_version(cache, &version) else {
+            continue;
+        };
+        if keep.contains(&version) || now.saturating_sub(c.downloaded_at) < recent.as_secs() {
+            if !plain_name(&c.release.asset) {
+                continue;
+            }
+            let archive = e.path().join(&c.release.asset);
+            if let Ok(meta) = std::fs::symlink_metadata(&archive) {
+                if meta.is_file() && std::fs::remove_file(&archive).is_ok() {
+                    freed += meta.len();
+                }
+            }
+        } else {
+            let size = tree_size(&e.path());
+            if std::fs::remove_dir_all(e.path()).is_ok() {
+                freed += size;
+            }
+        }
+    }
+    freed
+}
+
+/// Bytes of the regular files under `dir`, symlinks not followed.
+fn tree_size(dir: &Path) -> u64 {
+    let mut total = 0;
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            match e.file_type() {
+                Ok(t) if t.is_dir() => stack.push(e.path()),
+                Ok(t) if t.is_file() => total += e.metadata().map_or(0, |m| m.len()),
+                _ => {}
+            }
+        }
+    }
+    total
 }
 
 /// The value of `key` in `[section]` of an ini text (the first uncommented
@@ -1048,6 +1125,84 @@ mod tests {
             "[09:11:09.465212] [E] UpdateFfxApiProviderEx for: SwapchainDX12, result: 0X80004002\n";
         assert!(read_log(swap).errors.is_empty());
         assert_eq!(read_log("[1] [E] f something broke\n").errors.len(), 1);
+    }
+
+    #[test]
+    fn the_cache_keeps_the_releases_in_use_and_drops_their_archives() {
+        let cache = tempfile::tempdir().unwrap();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let put = |version: &str, age: u64| {
+            let dir = cache.path().join(version);
+            std::fs::create_dir_all(dir.join("files")).unwrap();
+            std::fs::write(dir.join("files/OptiScaler.dll"), [0u8; 100]).unwrap();
+            let release = Release {
+                version: version.into(),
+                asset: format!("Optiscaler_{version}.7z"),
+                ..Release::recommended()
+            };
+            std::fs::write(dir.join(&release.asset), [0u8; 10]).unwrap();
+            let c = Cached {
+                release,
+                dir: dir.join("files"),
+                url: String::new(),
+                downloaded_at: now - age,
+                license: "GPL-3.0".into(),
+            };
+            std::fs::write(dir.join("release.json"), serde_json::to_string(&c).unwrap()).unwrap();
+        };
+        let day = 86_400;
+        // On the lab laptop: 0.9.4 installed, 0.9.3 left from an old test.
+        put("0.9.4", 30 * day);
+        put("0.9.3", 60 * day);
+        // Fetched a minute ago by an Apply that has not recorded it yet.
+        put("0.9.5", 60);
+        // A download in progress: no release.json yet.
+        std::fs::create_dir_all(cache.path().join("0.9.6")).unwrap();
+        std::fs::write(cache.path().join("0.9.6/download.part"), b"x").unwrap();
+        std::fs::write(cache.path().join("releases.json"), b"[]").unwrap();
+
+        let keep = ["0.9.4".to_owned()];
+        let freed = prune_cache(cache.path(), &keep, std::time::Duration::from_secs(day));
+        let p = cache.path();
+        assert!(p.join("0.9.4/files/OptiScaler.dll").is_file());
+        assert!(!p.join("0.9.4/Optiscaler_0.9.4.7z").exists());
+        assert!(!p.join("0.9.3").exists());
+        assert!(p.join("0.9.5/files/OptiScaler.dll").is_file());
+        assert!(!p.join("0.9.5/Optiscaler_0.9.5.7z").exists());
+        assert!(p.join("0.9.6/download.part").is_file());
+        assert!(p.join("releases.json").is_file());
+        // 0.9.3's dll, record and archive, the two other archives.
+        let record = std::fs::metadata(p.join("0.9.4/release.json"))
+            .unwrap()
+            .len();
+        assert!(
+            freed >= 100 + 10 + 10 + 10 && freed <= 130 + record + 64,
+            "{freed}"
+        );
+        // Still found where installs look for it.
+        assert!(cached_version(p, "0.9.4").is_some());
+        assert_eq!(
+            prune_cache(p, &keep, std::time::Duration::from_secs(day)),
+            0
+        );
+    }
+
+    #[test]
+    fn a_release_name_with_a_path_in_it_is_refused() {
+        assert!(plain_name("Optiscaler_0.9.4-final.20260718._MM.7z"));
+        for bad in ["", "../x.7z", "a/b.7z", ".hidden", "a\\b"] {
+            assert!(!plain_name(bad), "{bad}");
+        }
+        let cache = tempfile::tempdir().unwrap();
+        let evil = Release {
+            asset: "../../escape.7z".into(),
+            ..Release::recommended()
+        };
+        assert!(fetch(cache.path(), &evil).is_err());
+        assert!(!cache.path().join("0.9.4").exists());
     }
 
     #[test]

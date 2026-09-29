@@ -711,6 +711,7 @@ pub fn install(
     let mut m = apply_release(target, o, &cached, &exe_dir)?;
     tracing::info!(target: "graphics", game = %target.process, version = %m.source.version,
         "graphics enhancement installed; active from the next start");
+    tidy_cache();
     let game_setting = match input_setting(target, o.input) {
         Some(s) => {
             let (applied, changes) = ingame::switch_on(proton_prefix(target).as_deref(), &s);
@@ -811,7 +812,9 @@ pub fn reinstall(
     // release, downloaded and checked.
     let cache = optiscaler::cache_dir();
     optiscaler::fetch(&cache, &release_for(&cache, version)?)?;
-    remove(target)?;
+    // Not remove(): pruning there could drop the release fetched above when
+    // no other game uses it; install() tidies once it is recorded.
+    remove_files(target)?;
     install(target, plan, version).map_err(|e| {
         UserError::plain(N_(
             "the new choice could not be installed; the game has its own files, as after Restore",
@@ -887,6 +890,7 @@ pub fn update(
             m.save(&state)?;
             tracing::info!(target: "graphics", game = %target.process, version = %to.version,
                 "OptiScaler updated; the previous version is kept to go back to");
+            tidy_cache();
             Ok(m)
         }
         Err(e) => {
@@ -962,12 +966,49 @@ pub fn update_offer(target: &Target, cfg: &config::AiGraphicsConfig) -> Option<v
 }
 
 /// Remove everything BiGame-mode placed in `target`, restoring originals —
-/// files, and the game's own settings Apply switched on.
+/// files, and the game's own settings Apply switched on — then the cached
+/// releases no game uses any more.
 ///
 /// # Errors
 /// Returns an error if the game is running, its Wine prefix stays in use,
 /// or a file cannot be restored.
 pub fn remove(target: &Target) -> anyhow::Result<Vec<transaction::FileOutcome>> {
+    let out = remove_files(target)?;
+    tidy_cache();
+    Ok(out)
+}
+
+/// The `OptiScaler` versions some game needs from the cache: the one installed
+/// and the one Go back returns to, from every manifest, finished or not.
+fn versions_in_use(state: &Path) -> Vec<String> {
+    let Ok(dir) = std::fs::read_dir(state) else {
+        return Vec::new();
+    };
+    dir.flatten()
+        .filter_map(|d| manifest::Manifest::load(state, &d.file_name().to_string_lossy()).ok()?)
+        .flat_map(|m| [Some(m.source), m.previous])
+        .flatten()
+        .filter(|s| s.component == optiscaler::COMPONENT)
+        .map(|s| s.version)
+        .collect()
+}
+
+/// Drop from the download cache what no game needs (see
+/// [`optiscaler::prune_cache`]). Run after every change to what is
+/// installed; a release fetched in the last day stays for the next Apply.
+fn tidy_cache() {
+    let freed = optiscaler::prune_cache(
+        &optiscaler::cache_dir(),
+        &versions_in_use(&state_dir()),
+        std::time::Duration::from_secs(24 * 3600),
+    );
+    if freed > 0 {
+        tracing::info!(target: "graphics", freed_bytes = freed,
+            "OptiScaler releases no game uses removed from the cache");
+    }
+}
+
+fn remove_files(target: &Target) -> anyhow::Result<Vec<transaction::FileOutcome>> {
     ensure_closed(target)?;
     let state = state_dir();
     let settings = manifest::Manifest::load(&state, &target.key())?

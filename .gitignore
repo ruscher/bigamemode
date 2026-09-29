@@ -1,13 +1,14 @@
 # Rust
 target/
 
-# makepkg working directories and packages
+# makepkg working directories and packages (a package built from a clone of
+# this tree lands in that clone's own src/ and pkg/; see clean-dev.sh)
 /src/
 /pkg/
 /pkgbuild/
 *.pkg.tar
-*.pkg.tar.zst
-*.pkg.tar.xz
+*.pkg.tar.*
+*.src.tar.gz
 
 # Compiled translations (built by the PKGBUILD)
 *.mo
@@ -24,11 +25,19 @@ target/
 .DS_Store
 __pycache__/
 
+# Crash dumps and profiler output
+vgcore.*
+perf.data
+perf.data.old
+*.profraw
+*.profdata
+
 # A benchmark session keeps its report, metrics, verdicts, machine state and
 # the game's own summary of every run; the raw captures behind them (per-frame
 # profiles and frame times, GPU samples, run logs, screenshots, the HTML copy
 # of report.md) stay beside them, uncommitted. The ones from before
-# 2026-09-28 are at the tag benchmarks-raw-data.
+# 2026-09-28 are at the tag benchmarks-raw-data; `scripts/clean-dev.sh --deep`
+# moves the later ones to $XDG_DATA_HOME/bigame-mode/benchmarks/raw.
 bigame-engine/benchmarks/**/stdout.log
 bigame-engine/benchmarks/**/stdout.log.*.csv
 bigame-engine/benchmarks/**/session.log
