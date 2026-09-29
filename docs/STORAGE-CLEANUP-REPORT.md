@@ -94,9 +94,12 @@ not the Wine prefixes, not the user's `Lossless.dll`.
   - `turbo status`, `detect`, `launch_plan` (PRIME offload), `lsfg` (layer
     and DLL ready) and `graphics_capabilities` (OptiScaler available, no
     DLSS on the GTX) behaved as before.
-- **Not installed:** installing the package needs root, and the Polkit
-  prompt for it was not answered. The installed package is still 2.2.0-4,
-  and the daemon checks ran against it.
+- **Installed:** the package built the same way (as 2.2.0-4.1, so it
+  replaces 2.2.0-4) was installed with pacman. The old helper was stopped by
+  the install script, and D-Bus started the new one on the next call. Turbo
+  went off and on again through it, Polkit and falcond, with the More FPS
+  preset; `health` reported the helper reachable, and the kernel log showed
+  no GPU errors.
 
 ## The 20 largest directories left
 
