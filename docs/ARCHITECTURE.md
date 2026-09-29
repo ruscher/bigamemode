@@ -454,9 +454,9 @@ directory.
 | `$XDG_STATE_HOME/bigame-mode/` | Booster journal, last Turbo report, profile-migration backups |
 | `$XDG_CONFIG_HOME/bigame-mode/graphics-games.toml` | the user's own AI Graphics game list (optional) |
 | `$XDG_STATE_HOME/bigame-mode/graphics/<game>/` | AI Graphics manifests and backups |
-| `$XDG_CACHE_HOME/bigame-mode/graphics/optiscaler/<version>/` | the downloaded, verified OptiScaler releases |
+| `$XDG_CACHE_HOME/bigame-mode/graphics/optiscaler/<version>/` | the downloaded, verified OptiScaler releases, unpacked (the archive is removed once unpacked); after Apply, Update and Restore only the releases a manifest names (installed, or kept for Go back) and those fetched in the last day stay |
 | `$XDG_CACHE_HOME/bigame-mode/graphics/optiscaler/releases.json` | the stable releases GitHub lists with a checksum, refreshed at most daily |
-| `$XDG_CACHE_HOME/bigame-mode/benchmark/` | MangoHud captures of *Measure the difference* |
+| `$XDG_CACHE_HOME/bigame-mode/benchmark/` | MangoHud captures of *Measure the difference*, emptied before every run |
 
 ## Network, logs and the application's own cost
 
