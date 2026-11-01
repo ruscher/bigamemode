@@ -193,6 +193,8 @@ const SYSTEM_PROCESSES: &[&str] = &[
     "xfwm4",
     "openbox",
     "picom",
+    "wmaker",
+    "wlmaker",
     // Sound.
     "pipewire",
     "pipewire-pulse",

@@ -195,6 +195,21 @@ const DESKTOP: &[&str] = &[
     "muffin",
     "marco",
     "openbox",
+    // Window Maker (X11) and wlmaker (Wayland), with the Big WindowMaker
+    // session: the window manager runs in the login scope, where the cgroup
+    // proves nothing, and the rest is XDG autostart under app.slice, which
+    // reads as programs the user opened. Pausing wmaker freezes every
+    // window; the docks, the tray and the dockapps are the desktop's panel.
+    "wmaker",
+    "wmsetbg",
+    "wlmaker",
+    "wlmdock",
+    "big-wm-*",
+    "snixembed",
+    "xss-lock",
+    "i3lock",
+    "stalonetray",
+    "wmsystemtray",
     // KDE Plasma.
     "plasma*",
     "startplasma*",
@@ -1568,6 +1583,11 @@ mod tests {
             );
         }
         assert_eq!(classify("kwin_wayland"), Kind::Desktop);
+        // Window Maker / wlmaker and the Big WindowMaker session
+        // (comm is cut at 15 characters: "big-wm-tabbed-d").
+        for name in ["wmaker", "wlmaker", "wlmdock", "big-wm-tabbed-d", "big-wm-notifyd", "wmsystemtray", "snixembed", "xss-lock"] {
+            assert_eq!(classify(name), Kind::Desktop, "{name}");
+        }
         assert_eq!(classify("pipewire"), Kind::Desktop);
     }
 
